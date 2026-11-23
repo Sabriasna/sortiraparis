@@ -1,18 +1,22 @@
 const crypto = require("crypto");
 const { redis, KEY, configured } = require("./_redis");
 
-function sameSecret(a, b) {
-  const ha = crypto.createHash("sha256").update(String(a)).digest();
-  const hb = crypto.createHash("sha256").update(String(b)).digest();
-  return crypto.timingSafeEqual(ha, hb);
+// SHA-256 of the group's results password (the password itself is not stored here).
+// Setting RESULTS_PASSWORD in Vercel overrides it.
+const DEFAULT_HASH = "62d79bc720065d1ea80cf9681632471cdb05c302a9481bfe2da6446148c21372";
+
+const sha = (s) => crypto.createHash("sha256").update(String(s)).digest();
+
+function isAuthorized(given) {
+  if (!given) return false;
+  const expected = process.env.RESULTS_PASSWORD ? sha(process.env.RESULTS_PASSWORD) : Buffer.from(DEFAULT_HASH, "hex");
+  return crypto.timingSafeEqual(sha(given), expected);
 }
 
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  const secret = process.env.RESULTS_PASSWORD;
-  if (!secret) return res.status(503).json({ error: "RESULTS_PASSWORD not set" });
   const given = req.headers["x-results-key"] || "";
-  if (!given || !sameSecret(given, secret)) return res.status(401).json({ error: "Unauthorized" });
+  if (!isAuthorized(given)) return res.status(401).json({ error: "Unauthorized" });
   if (!configured()) return res.status(503).json({ error: "Storage not configured" });
 
   try {

@@ -11,8 +11,7 @@ Questionnaire en ligne pour le business case « Défi Strat Entreprise » sur Le
 
 1. Sur vercel.com : **Add New → Project**, importer ce dépôt GitHub, puis **Deploy** (aucun réglage à changer).
 2. Dans le projet : **Storage → Create Database → Upstash for Redis** (offre gratuite), puis **Connect** au projet.
-3. **Settings → Environment Variables** : ajouter `RESULTS_PASSWORD` avec le mot de passe du groupe.
-4. **Deployments → Redeploy** pour prendre en compte la base et le mot de passe.
+3. Le mot de passe des résultats est déjà configuré (seule son empreinte SHA-256 est dans le code). Pour le changer : **Settings → Environment Variables**, ajouter `RESULTS_PASSWORD`, puis redéployer.
 
 ## Export
 
