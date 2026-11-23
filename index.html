@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Questionnaire – Vos sorties à Paris</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#141a33; --night-2:#1d2547; --sun:#ff8a3d; --sun-2:#ffc857; --rose:#ff5d73;
+    --cream:#fff7ec; --ink:#1b1b22; --muted:#6b6a75; --line:#eadfce; --ok:#2e9e6a; --err:#d43c3c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:"DM Sans",system-ui,sans-serif; color:var(--ink); min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(255,200,87,.55), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(255,93,115,.45), transparent 60%),
+      linear-gradient(180deg, var(--night) 0%, var(--night-2) 100%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:28px 18px 64px}
+  header.top{color:var(--cream);margin-bottom:18px}
+  .kicker{font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.8}
+  h1{font-family:"Syne",sans-serif;font-weight:800;font-size:clamp(28px,6vw,44px);line-height:1.02;margin:8px 0 0}
+  h1 span{background:linear-gradient(90deg,var(--sun-2),var(--sun),var(--rose));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .progress{height:6px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin:18px 0 6px}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--sun-2),var(--rose));transition:width .35s ease}
+  .step{color:var(--cream);opacity:.75;font-size:13px}
+  .card{background:var(--cream);border-radius:22px;padding:26px 22px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .card h2{font-family:"Syne",sans-serif;font-size:22px;margin:0 0 6px}
+  .card p.lead{color:var(--muted);margin:0 0 8px;line-height:1.5}
+  .q{padding:18px 0;border-top:1px solid var(--line)}
+  .q:first-of-type{border-top:0}
+  .q .label{font-weight:700;line-height:1.4;margin-bottom:4px}
+  .q .num{display:inline-block;min-width:30px;color:var(--sun);font-family:"Syne",sans-serif}
+  .q .hint{font-size:13px;color:var(--muted);margin-bottom:10px}
+  .q.invalid .label{color:var(--err)}
+  .q .errmsg{display:none;color:var(--err);font-size:13px;margin-top:8px}
+  .q.invalid .errmsg{display:block}
+  .opts{display:grid;gap:8px}
+  .opt{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:border-color .15s,background .15s}
+  .opt:hover{border-color:var(--sun)}
+  .opt input{accent-color:var(--sun);width:18px;height:18px;margin:0;flex:none}
+  .opt.checked{border-color:var(--sun);background:#fff1e3}
+  .opt.disabled{opacity:.45;cursor:not-allowed}
+  .grid{width:100%;border-collapse:collapse;font-size:14px}
+  .grid th{font-weight:500;color:var(--muted);font-size:12px;padding:4px 2px;text-align:center}
+  .grid td{padding:8px 2px;border-top:1px solid var(--line);text-align:center}
+  .grid td.rl{text-align:left;padding-right:8px}
+  .grid input{accent-color:var(--sun);width:18px;height:18px}
+  .grid tr.missing td.rl{color:var(--err)}
+  textarea{width:100%;min-height:90px;border:1.5px solid var(--line);border-radius:12px;padding:12px;font:inherit;resize:vertical;background:#fff}
+  textarea:focus{outline:2px solid var(--sun);border-color:transparent}
+  .nav{display:flex;justify-content:space-between;gap:12px;margin-top:22px}
+  button{font:inherit;font-weight:700;border:0;border-radius:99px;padding:13px 22px;cursor:pointer}
+  .primary{background:linear-gradient(90deg,var(--sun),var(--rose));color:#fff;box-shadow:0 8px 20px rgba(255,93,115,.35)}
+  .primary:disabled{opacity:.6;cursor:wait}
+  .ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .center{text-align:center}
+  .big{font-size:46px;margin:4px 0}
+  .notice{border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45;margin-top:14px}
+  .notice.warn{background:#fff0d6;border:1px solid #f3c46b}
+  .notice.err{background:#fde6e6;border:1px solid #efaaaa}
+  .footer{color:var(--cream);opacity:.6;font-size:12px;text-align:center;margin-top:18px}
+  .footer a{color:inherit}
+  /* résultats */
+  .res-q{padding:14px 0;border-top:1px solid var(--line)}
+  .bar{display:grid;grid-template-columns:1fr 46px;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+  .bar .track{position:relative;background:#f1e6d6;border-radius:6px;height:24px;overflow:hidden}
+  .bar .fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--sun-2),var(--sun))}
+  .bar .txt{position:relative;padding:3px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .n{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+  .tabs{display:flex;gap:8px;margin-top:14px}
+  .tabs a{color:var(--cream);text-decoration:none;font-size:13px;padding:7px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.3)}
+  .tabs a.on{background:var(--cream);color:var(--night)}
+  .verb{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">Projet d'école · Défi Strat Entreprise</div>
+    <h1>Vos sorties <span>à Paris</span></h1>
+    <nav class="tabs" id="tabs" hidden>
+      <a href="#" id="tab-form" class="on">Questionnaire</a>
+      <a href="#resultats" id="tab-res">Résultats</a>
+    </nav>
+    <div class="progress" id="progressWrap"><i id="progress"></i></div>
+    <div class="step" id="step"></div>
+  </header>
+  <main class="card" id="card"></main>
+  <input id="hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
+  <div class="footer">Réponses anonymes · utilisées uniquement pour un travail universitaire</div>
+</div>
+
+<script>
+const SECTIONS = [
+  { title:"Profil", qs:[
+    {id:"q1", n:1, type:"single", label:"Quel âge avez-vous ?", options:["Moins de 18 ans","18-24 ans","25-30 ans","31-40 ans","Plus de 40 ans"]},
+    {id:"q2", n:2, type:"single", label:"Vous êtes :", options:["Une femme","Un homme","Autre / je préfère ne pas répondre"]},
+    {id:"q3", n:3, type:"single", label:"Où habitez-vous ?", options:["Paris intra-muros","Petite couronne (92, 93, 94)","Grande couronne","Hors Île-de-France"]},
+    {id:"q4", n:4, type:"single", label:"Votre situation :", options:["Étudiant(e) / alternant(e)","Salarié(e)","Indépendant(e) / entrepreneur","Autre"]},
+  ]},
+  { title:"Habitudes de sortie et budget", qs:[
+    {id:"q5", n:5, type:"single", label:"À quelle fréquence sortez-vous le soir (bar, club, soirée) ?", options:["Plusieurs fois par semaine","Une fois par semaine","2 à 3 fois par mois","Une fois par mois ou moins"]},
+    {id:"q6", n:6, type:"single", label:"Par rapport à avant 2020, vous sortez :", options:["Plus souvent","Autant","Moins souvent"]},
+    {id:"q7", n:7, type:"multi", max:3, label:"Quel type de soirée préférez-vous ?", options:["Afterwork / verre en terrasse ou rooftop","Dîner puis verre","Soirée dans un bar avec DJ","Club jusqu'au bout de la nuit","Open air / festival","Soirée privée / événement d'entreprise"]},
+    {id:"q8", n:8, type:"single", label:"Quel budget dépensez-vous en moyenne pour une soirée (entrée + boissons + nourriture) ?", options:["Moins de 30 €","30 à 50 €","50 à 80 €","Plus de 80 €"]},
+    {id:"q9", n:9, type:"multi", label:"Comment découvrez-vous vos soirées ?", options:["Instagram","TikTok","Shotgun / billetterie en ligne","Bouche-à-oreille / amis","Newsletter ou groupe WhatsApp","Autre"]},
+  ]},
+  { title:"Critères de choix et programmation musicale", qs:[
+    {id:"q10", n:10, type:"grid", label:"Quand vous choisissez où sortir, quelle importance accordez-vous à chaque critère ?", hint:"1 = pas important · 5 = très important",
+      rows:["Le prix","L'ambiance et la déco du lieu","Le DJ ou l'artiste programmé","Le style de musique","Les amis qui y vont","L'emplacement et l'accès","La possibilité de manger sur place","L'accueil à l'entrée (sécurité, staff)","Profiter d'un espace extérieur toute la soirée","Les avis en ligne sur le lieu"]},
+    {id:"q11", n:11, type:"single", label:"Pour un DJ connu (tête d'affiche), combien seriez-vous prêt(e) à payer l'entrée ?", options:["Je ne paierais pas plus qu'une soirée normale","Moins de 15 €","15 à 25 €","25 à 40 €","Plus de 40 €"]},
+    {id:"q12", n:12, type:"single", label:"Qu'est-ce qui vous donne le plus envie de revenir dans un lieu ?", options:["Une tête d'affiche de temps en temps","Des DJ résidents et des soirées régulières que je connais","Un mélange des deux","La musique compte peu, c'est surtout le lieu et l'ambiance"]},
+  ]},
+  { title:"Le Mazette", qs:[
+    {id:"q13", n:13, type:"single", label:"Connaissez-vous Le Mazette, la péniche du Port de la Rapée (Paris 12e) ?", options:["Oui, j'y suis déjà allé(e)","Oui, de nom seulement","Non"]},
+    {id:"q14", n:14, type:"multi", optional:true, showIf:a=>a.q13==="Oui, j'y suis déjà allé(e)", label:"Pour quelle occasion y êtes-vous allé(e) ?", options:["Afterwork / verre","Dîner","Soirée DJ / club","Événement privé ou d'entreprise"]},
+    {id:"q15", n:15, type:"multi", max:3, showIf:a=>a.q13 && a.q13!=="Non", label:"Quels mots associez-vous au Mazette ?", options:["Festif","Convivial / fédérateur","Branché","Original","Accessible","Cher","Accueil difficile / sécurité stricte","Excentré / difficile d'accès","Je ne sais pas"]},
+    {id:"q16", n:16, type:"multi", optional:true, showIf:a=>a.q13 && a.q13!=="Non", label:"Qu'est-ce qui vous empêche d'y aller plus souvent ?", options:["Le lieu est loin de mes habitudes","Le prix d'entrée (15 €) par rapport à ce qu'on vit sur place","La programmation ne me parle pas","Je ne sais pas ce qui s'y passe","Une mauvaise expérience à l'entrée ou avec le staff","La terrasse ferme tôt alors que la soirée continue à l'intérieur","La soirée ne correspondait pas à ce qui était annoncé (line-up, prix, horaires)","Les avis négatifs que j'ai lus","Rien, j'y vais régulièrement"]},
+  ]},
+  { title:"Ce qui ferait venir et revenir", qs:[
+    {id:"q17", n:17, type:"multi", max:3, label:"Qu'est-ce qui vous donnerait envie d'aller dans un lieu festif sur une péniche ?", options:["Une tête d'affiche connue","Des DJ locaux / collectifs parisiens","Une soirée à thème régulière (ex. tous les jeudis)","Une formule dîner + soirée à prix fixe","L'entrée gratuite avant une certaine heure","Le rooftop / la terrasse sur la Seine"]},
+    {id:"q18", n:18, type:"single", label:"Une formule « dîner + entrée soirée » vous intéresserait-elle ?", options:["Oui, à moins de 40 €","Oui, à 40-60 €","Oui, à plus de 60 €","Non"]},
+    {id:"q19", n:19, type:"multi", label:"Quels styles de musique vous font sortir ?", options:["House / disco","Techno","Afro / amapiano","Hip-hop / R&B","Latino / reggaeton","Années 80-2000 / généraliste","Autre"]},
+    {id:"q20", n:20, type:"multi", label:"Avant d'acheter une place, quelles informations sont indispensables pour vous ?", options:["Le line-up et le style de musique exacts","Le prix d'entrée et ce qu'il inclut","Les horaires de chaque espace (terrasse, intérieur)","La possibilité de sortir et de revenir","Les horaires du vestiaire","Le dress code / la politique d'entrée"]},
+    {id:"q21", n:21, type:"single", label:"Consultez-vous les avis Google ou les réseaux sociaux avant de choisir un lieu de sortie ?", options:["Toujours","Parfois","Rarement ou jamais"]},
+    {id:"q22", n:22, type:"text", optional:true, label:"Une dernière idée pour qu'un lieu comme Le Mazette vous donne envie de revenir ?"},
+  ]},
+];
+const ALLQ = SECTIONS.flatMap(s=>s.qs);
+
+const $card = document.getElementById("card");
+const $progress = document.getElementById("progress");
+const $step = document.getElementById("step");
+const $progressWrap = document.getElementById("progressWrap");
+
+let answers = {};
+let page = -1; // -1 intro, 0..n-1 sections, "done", "minor"
+let resKey = "";
+
+const visible = q => !q.showIf || q.showIf(answers);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function setProgress(){
+  const total = SECTIONS.length;
+  let pct = page<0 ? 0 : (typeof page==="number" ? (page)/total*100 : 100);
+  $progress.style.width = pct+"%";
+  $step.textContent = typeof page==="number" && page>=0 ? `Partie ${page+1} sur ${total} · ${SECTIONS[page].title}` : "";
+}
+
+function renderIntro(){
+  $card.innerHTML = `
+    <h2>Bonjour !</h2>
+    <p class="lead">Dans le cadre d'un projet d'école, nous étudions les habitudes de sortie des Parisiens et ce qui fait qu'on choisit un lieu plutôt qu'un autre.</p>
+    <p class="lead">Le questionnaire prend <b>6 minutes</b>, il est anonyme et vos réponses servent uniquement à notre analyse. Merci pour votre aide !</p>
+    <div class="nav"><span></span><button class="primary" id="start">Commencer</button></div>`;
+  let done=false; try{ done=localStorage.getItem("mazette_done")==="1"; }catch(_){}
+  if(done) $card.querySelector(".lead").insertAdjacentHTML("beforebegin",`<div class="notice warn" style="margin:0 0 12px">Vous avez déjà répondu depuis cet appareil. Merci ! Inutile de recommencer.</div>`);
+  document.getElementById("start").onclick = ()=>{ page=0; render(); };
+}
+
+function qHtml(q){
+  const a = answers[q.id];
+  const req = q.optional ? ` <span style="font-weight:400;color:var(--muted)">(facultatif)</span>` : "";
+  let hint = q.hint || "";
+  if(q.type==="multi") hint = q.max ? `Jusqu'à ${q.max} réponses` : "Plusieurs réponses possibles";
+  let body = "";
+  if(q.type==="single"||q.type==="multi"){
+    const t = q.type==="single" ? "radio" : "checkbox";
+    const sel = q.type==="single" ? [a] : (a||[]);
+    const full = q.max && sel.length>=q.max;
+    body = `<div class="opts">${q.options.map((o,i)=>{
+      const c = sel.includes(o);
+      const dis = q.type==="multi" && full && !c;
+      return `<label class="opt ${c?"checked":""} ${dis?"disabled":""}"><input type="${t}" name="${q.id}" value="${i}" ${c?"checked":""} ${dis?"disabled":""}><span>${esc(o)}</span></label>`;
+    }).join("")}</div>`;
+  } else if(q.type==="grid"){
+    const g = a||{};
+    body = `<table class="grid"><thead><tr><th></th>${[1,2,3,4,5].map(n=>`<th>${n}</th>`).join("")}</tr></thead><tbody>${
+      q.rows.map((r,ri)=>`<tr data-row="${ri}"><td class="rl">${esc(r)}</td>${[1,2,3,4,5].map(n=>`<td><input type="radio" aria-label="${esc(r)} : ${n}" name="${q.id}_${ri}" value="${n}" ${g[r]===n?"checked":""}></td>`).join("")}</tr>`).join("")
+    }</tbody></table>`;
+  } else if(q.type==="text"){
+    body = `<textarea name="${q.id}" maxlength="1000" placeholder="Votre réponse">${esc(a||"")}</textarea>`;
+  }
+  return `<div class="q" id="w_${q.id}" data-q="${q.id}">
+    <div class="label"><span class="num">${q.n}.</span>${esc(q.label)}${req}</div>
+    ${hint?`<div class="hint">${esc(hint)}</div>`:""}
+    ${body}
+    <div class="errmsg">Merci de répondre à cette question${q.type==="grid"?" (toutes les lignes)":""}.</div>
+  </div>`;
+}
+
+function renderSection(){
+  const s = SECTIONS[page];
+  const qs = s.qs.filter(visible);
+  $card.innerHTML = `<h2>${esc(s.title)}</h2>${qs.map(qHtml).join("")}
+    <div class="nav">${page>0?`<button class="ghost" id="prev">Retour</button>`:`<span></span>`}
+    <button class="primary" id="next">${page===SECTIONS.length-1?"Envoyer mes réponses":"Suivant"}</button></div>
+    <div id="sendmsg"></div>`;
+  bindSection(qs);
+}
+
+function bindSection(qs){
+  qs.forEach(q=>{
+    const w = document.getElementById("w_"+q.id);
+    if(q.type==="single"||q.type==="multi"){
+      w.addEventListener("change",e=>{
+        const vals=[...w.querySelectorAll("input:checked")].map(i=>q.options[+i.value]);
+        answers[q.id] = q.type==="single" ? vals[0] : vals;
+        w.classList.remove("invalid");
+        // q13 changes which questions show; q1 may end the survey
+        if(q.id==="q13") { pruneHidden(); renderSection(); document.getElementById("w_q13").scrollIntoView({block:"center"}); return; }
+        // refresh this question only (checked / disabled states)
+        const tmp=document.createElement("div"); tmp.innerHTML=qHtml(q);
+        w.replaceWith(tmp.firstElementChild); bindSection([q]);
+      });
+    } else if(q.type==="grid"){
+      w.addEventListener("change",e=>{
+        const t=e.target; const ri=+t.name.split("_")[1];
+        answers[q.id] = Object.assign({}, answers[q.id]||{}, {[q.rows[ri]]:+t.value});
+        t.closest("tr").classList.remove("missing");
+        if(Object.keys(answers[q.id]).length===q.rows.length) w.classList.remove("invalid");
+      });
+    } else if(q.type==="text"){
+      w.querySelector("textarea").addEventListener("input",e=>{ answers[q.id]=e.target.value; });
+    }
+  });
+  const prev=document.getElementById("prev"); if(prev) prev.onclick=()=>{ page--; render(); };
+  const next=document.getElementById("next"); if(next) next.onclick=onNext;
+}
+
+function pruneHidden(){ ALLQ.forEach(q=>{ if(!visible(q)) delete answers[q.id]; }); }
+
+function isAnswered(q){
+  const a=answers[q.id];
+  if(q.type==="single") return !!a;
+  if(q.type==="multi") return Array.isArray(a)&&a.length>0;
+  if(q.type==="grid") return a && Object.keys(a).length===q.rows.length;
+  if(q.type==="text") return !!(a&&a.trim());
+}
+
+function validate(){
+  const qs=SECTIONS[page].qs.filter(visible);
+  let first=null;
+  qs.forEach(q=>{
+    const w=document.getElementById("w_"+q.id);
+    const ok = q.optional || isAnswered(q);
+    w.classList.toggle("invalid",!ok);
+    if(q.type==="grid"){ const g=answers[q.id]||{}; w.querySelectorAll("tr[data-row]").forEach(tr=>tr.classList.toggle("missing", !ok && !g[q.rows[+tr.dataset.row]])); }
+    if(!ok && !first) first=w;
+  });
+  if(first) first.scrollIntoView({behavior:"smooth",block:"center"});
+  return !first;
+}
+
+async function onNext(){
+  if(!validate()) return;
+  if(page===0 && answers.q1==="Moins de 18 ans"){ page="minor"; render(); return; }
+  if(page<SECTIONS.length-1){ page++; render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+  await submit();
+}
+
+function clean(){
+  const out={};
+  ALLQ.forEach(q=>{ if(visible(q) && answers[q.id]!==undefined && answers[q.id]!=="") out[q.id]=answers[q.id]; });
+  if(typeof out.q22==="string") out.q22=out.q22.trim().slice(0,1000);
+  return out;
+}
+
+async function submit(){
+  const btn=document.getElementById("next"); const msg=document.getElementById("sendmsg");
+  btn.disabled=true; btn.textContent="Envoi…";
+  const body={answers:clean(), version:2, website:document.getElementById("hp").value};
+  try{
+    const post=()=>fetch("/api/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    let r=await post();
+    if(r.status>=500){ await new Promise(res=>setTimeout(res,800)); r=await post(); }
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    try{ localStorage.setItem("mazette_done","1"); }catch(_){}
+    page="done"; render(); window.scrollTo({top:0,behavior:"smooth"});
+  }catch(e){
+    btn.disabled=false; btn.textContent="Réessayer l'envoi";
+    msg.innerHTML=`<div class="notice err"><b>Vos réponses n'ont pas pu être envoyées.</b> Vérifiez votre connexion puis réessayez. Si le problème continue, copiez vos réponses et envoyez-les à la personne qui vous a partagé ce lien.<div style="margin-top:10px"><button class="ghost" id="copyAns">Copier mes réponses</button></div></div>`;
+    document.getElementById("copyAns").onclick=async ev=>{
+      const txt=ALLQ.filter(q=>body.answers[q.id]!==undefined).map(q=>`${q.n}. ${q.label}\n→ ${fmt(q,body.answers[q.id])}`).join("\n\n");
+      try{ await navigator.clipboard.writeText(txt); ev.target.textContent="Copié ✓"; }catch(_){ ev.target.textContent="Copie impossible"; }
+    };
+  }
+}
+
+function fmt(q,a){
+  if(a===undefined||a===null) return "";
+  if(Array.isArray(a)) return a.join(" | ");
+  if(typeof a==="object") return Object.entries(a).map(([k,v])=>`${k}: ${v}`).join(" | ");
+  return String(a);
+}
+
+function renderDone(){
+  $card.innerHTML=`<div class="center"><div class="big">🎉</div><h2>Merci pour votre participation !</h2>
+  <p class="lead">Vos réponses ont bien été enregistrées. Elles vont nous aider à imaginer la soirée parfaite.</p></div>`;
+}
+function renderMinor(){
+  $card.innerHTML=`<div class="center"><h2>Merci !</h2><p class="lead">Ce questionnaire s'adresse aux personnes de 18 ans et plus. Merci quand même d'avoir pris le temps.</p></div>`;
+}
+
+/* ---------- Résultats (propriétaire / éditeurs) ---------- */
+let resCache=null;
+async function renderResults(){
+  $progressWrap.hidden=true; $step.textContent="";
+  let key=""; try{ key=sessionStorage.getItem("mazette_key")||""; }catch(_){}
+  if(!key){
+    $card.innerHTML=`<h2>Résultats</h2><p class="lead">Accès réservé au groupe projet.</p>
+      <form id="kf" style="display:flex;gap:8px;flex-wrap:wrap"><input id="k" type="password" placeholder="Mot de passe" autocomplete="current-password" style="flex:1;min-width:180px;border:1.5px solid var(--line);border-radius:99px;padding:12px 16px;font:inherit"><button class="primary">Voir les résultats</button></form><div id="kerr"></div>`;
+    document.getElementById("kf").onsubmit=e=>{ e.preventDefault(); const v=document.getElementById("k").value.trim(); if(!v) return; try{ sessionStorage.setItem("mazette_key",v);}catch(_){} resKey=v; renderResults(); };
+    if(!resKey) return; key=resKey;
+  }
+  $card.innerHTML=`<h2>Résultats</h2><p class="lead" id="resinfo">Chargement…</p><div id="resbody"></div>`;
+  const info=document.getElementById("resinfo"), out=document.getElementById("resbody");
+  let rows;
+  try{
+    const r=await fetch("/api/results",{headers:{"x-results-key":key}});
+    if(r.status===401){ try{sessionStorage.removeItem("mazette_key");}catch(_){} resKey=""; info.innerHTML=`Mot de passe incorrect. <a href="#resultats" onclick="renderResults();return false;">Réessayer</a>`; return; }
+    if(!r.ok) throw new Error();
+    rows=(await r.json()).responses||[];
+  }catch(e){ info.textContent="Impossible de lire les réponses pour le moment."; return; }
+  resCache=rows;
+  if(!rows.length){ info.textContent="Aucune réponse pour l'instant."; return; }
+  info.innerHTML=`<b>${rows.length}</b> réponse${rows.length>1?"s":""} enregistrée${rows.length>1?"s":""}. <button class="ghost" id="csv" style="padding:7px 14px;margin-left:6px">Copier en CSV</button>`;
+  document.getElementById("csv").onclick=copyCsv;
+  out.innerHTML=ALLQ.map(q=>{
+    const vals=rows.map(r=>r.answers&&r.answers[q.id]).filter(v=>v!==undefined);
+    let inner="";
+    if(q.type==="single"||q.type==="multi"){
+      const counts=q.options.map(o=>vals.filter(v=>Array.isArray(v)?v.includes(o):v===o).length);
+      const max=Math.max(1,...counts);
+      inner=q.options.map((o,i)=>`<div class="bar"><div class="track"><div class="fill" style="width:${counts[i]/max*100}%"></div><div class="txt">${esc(o)}</div></div><div class="n">${counts[i]}</div></div>`).join("");
+    } else if(q.type==="grid"){
+      const avgs=q.rows.map(r=>{ const xs=vals.map(v=>v&&v[r]).filter(Number.isFinite); return xs.length? xs.reduce((a,b)=>a+b,0)/xs.length : 0; });
+      const order=q.rows.map((r,i)=>i).sort((a,b)=>avgs[b]-avgs[a]);
+      inner=order.map(i=>`<div class="bar"><div class="track"><div class="fill" style="width:${avgs[i]/5*100}%"></div><div class="txt">${esc(q.rows[i])}</div></div><div class="n">${avgs[i].toFixed(1)}</div></div>`).join("")+`<div class="hint" style="margin-top:6px">Moyenne sur 5, triée de la plus haute à la plus basse.</div>`;
+    } else {
+      inner=vals.filter(v=>v&&String(v).trim()).map(v=>`<div class="verb">${esc(v)}</div>`).join("")||`<div class="hint">Aucune réponse.</div>`;
+    }
+    return `<div class="res-q"><div class="label"><span class="num">${q.n}.</span>${esc(q.label)} <span class="hint">(${vals.length} réponses)</span></div>${inner}</div>`;
+  }).join("");
+}
+
+async function copyCsv(ev){
+  const cols=[]; ALLQ.forEach(q=>{ if(q.type==="grid") q.rows.forEach(r=>cols.push({q,r,h:`Q${q.n} ${r}`})); else cols.push({q,h:`Q${q.n} ${q.label}`}); });
+  const cell=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const lines=[["Date",...cols.map(c=>c.h)].map(cell).join(",")];
+  (resCache||[]).forEach(r=>{
+    const a=r.answers||{};
+    lines.push([r.submittedAt||"",...cols.map(c=>{ const v=a[c.q.id]; if(v===undefined) return ""; if(c.r) return v[c.r]??""; return fmt(c.q,v); })].map(cell).join(","));
+  });
+  try{ await navigator.clipboard.writeText(lines.join("\n")); ev.target.textContent="CSV copié ✓"; }catch(_){ ev.target.textContent="Copie impossible"; }
+}
+
+/* ---------- routing ---------- */
+function render(){
+  if(location.hash==="#resultats"){ renderResults(); setTabs(true); return; }
+  setTabs(false);
+  $progressWrap.hidden=false; setProgress();
+  if(page===-1) renderIntro();
+  else if(page==="done") renderDone();
+  else if(page==="minor") renderMinor();
+  else renderSection();
+}
+function setTabs(res){
+  document.getElementById("tab-form").classList.toggle("on",!res);
+  document.getElementById("tab-res").classList.toggle("on",res);
+}
+document.getElementById("tab-form").onclick=e=>{ e.preventDefault(); history.replaceState(null,"",location.pathname+location.search); render(); };
+window.addEventListener("hashchange",render);
+if(location.hash==="#resultats") document.getElementById("tabs").hidden=false;
+render();
+</script>
+</body>
+</html>
