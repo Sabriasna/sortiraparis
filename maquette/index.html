@@ -594,8 +594,8 @@ function applyTheme(name) {
   Object.values(techno).forEach(g => g.visible = name === "techno");
   swaps.forEach(({ o, base, key }) => { const m = name === "classic" ? base : ALT[name][key]; o.material = m; o.userData.m0 = m; o.userData.mDim = undefined; });
   bDisco.classList.toggle("on", name === "disco"); bTechno.classList.toggle("on", name === "techno");
-  bDisco.textContent = name === "disco" ? "Style classique" : "Style disco ✦";
-  bTechno.textContent = name === "techno" ? "Style classique" : "Style psytrance ◈";
+  bDisco.setAttribute("aria-pressed", String(name === "disco"));
+  bTechno.setAttribute("aria-pressed", String(name === "techno"));
 }
 bDisco.onclick = () => applyTheme(theme.name === "disco" ? "classic" : "disco");
 bTechno.onclick = () => applyTheme(theme.name === "techno" ? "classic" : "techno");
