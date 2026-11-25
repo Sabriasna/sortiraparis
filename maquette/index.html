@@ -71,7 +71,7 @@
     <button id="bNight">Nuit</button>
     <button id="bSpin" class="on">Rotation</button>
     <button id="bTheme">Style disco ✦</button>
-    <button id="bTechno">Style techno ◈</button>
+    <button id="bTechno">Style psytrance ◈</button>
   </div>
   <h2>Simulation de crue</h2>
   <div class="crue-top"><span>Niveau à Paris-Austerlitz</span><b id="lvlTxt">1,0 m</b></div>
@@ -421,44 +421,89 @@ discoBall(0.5, -L / 2 - 6, 2.4, 0, disco.seine, 0.5);
   const p = new THREE.PointLight(c, 0, 22, 1.4); p.position.set(x, y, z); barge.add(p); discoLights.push(p);
 });
 
-// ---------- Techno / psytrance theme (UV, fractales, lasers, LED)
+// ---------- Psytrance theme (décor de festival : canopées en lycra, arbres-trompettes, pétales volants)
 const techno = { seine: new THREE.Group(), rdc: new THREE.Group(), roof: new THREE.Group() };
 Object.entries(techno).forEach(([k, g]) => { g.visible = false; levels[k].add(g); });
 const UV = [0x39ff14, 0xff00e6, 0x00e5ff, 0xfff200, 0x8a2bff, 0xff5e00];
-const lasers = [], mandalas = [], leds = [], technoLights = [];
-// Psychedelic mandala texture (UV-reactive tapestry)
-const mandalaTex = (seedCols) => canvasTex(512, 512, (g, w, h) => {
-  g.fillStyle = "#07020f"; g.fillRect(0, 0, w, h); g.translate(w / 2, h / 2);
-  const cols = seedCols.map(c => "#" + c.toString(16).padStart(6, "0"));
-  for (let ring = 12; ring >= 1; ring--) {
-    const r = ring * 20, petals = 6 + ring * 2;
-    g.strokeStyle = cols[ring % cols.length]; g.fillStyle = cols[(ring + 2) % cols.length]; g.lineWidth = 2.2;
-    for (let p = 0; p < petals; p++) {
-      g.save(); g.rotate((p / petals) * Math.PI * 2 + ring * 0.2);
-      g.beginPath(); g.moveTo(0, r - 18); g.quadraticCurveTo(10, r - 6, 0, r + 8); g.quadraticCurveTo(-10, r - 6, 0, r - 18);
-      g.globalAlpha = 0.85; g.stroke(); g.globalAlpha = 0.25; g.fill(); g.restore();
+const lasers = [], mandalas = [], leds = [], technoLights = [], petals = [];
+const hex = c => "#" + c.toString(16).padStart(6, "0");
+
+// Ornate mandala print: gold frames, violet panels, teal accents (like the big canopies)
+const ornateTex = canvasTex(1024, 1024, (g, w, h) => {
+  const grd = g.createRadialGradient(w / 2, h / 2, 40, w / 2, h / 2, w / 2);
+  grd.addColorStop(0, "#5b2a86"); grd.addColorStop(0.45, "#8a4fc4"); grd.addColorStop(0.75, "#e0a63a"); grd.addColorStop(1, "#f4c95d");
+  g.fillStyle = grd; g.fillRect(0, 0, w, h); g.translate(w / 2, h / 2);
+  for (let ring = 9; ring >= 1; ring--) {
+    const r = ring * 52, n = 6 + ring * 3;
+    for (let p = 0; p < n; p++) {
+      g.save(); g.rotate((p / n) * Math.PI * 2 + ring * 0.3);
+      g.beginPath(); g.moveTo(0, r - 40); g.bezierCurveTo(26, r - 30, 22, r + 10, 0, r + 22); g.bezierCurveTo(-22, r + 10, -26, r - 30, 0, r - 40);
+      g.fillStyle = ring % 3 === 0 ? "#2bb5a3" : ring % 3 === 1 ? "#c04fd0" : "#7a3cc0"; g.globalAlpha = 0.85; g.fill();
+      g.lineWidth = 4; g.strokeStyle = "#f6cf5a"; g.globalAlpha = 1; g.stroke();
+      g.beginPath(); g.arc(0, r - 8, 5, 0, Math.PI * 2); g.fillStyle = "#ff6fb5"; g.fill();
+      g.restore();
     }
-    g.globalAlpha = 0.9; g.beginPath(); g.arc(0, 0, r - 20, 0, Math.PI * 2); g.strokeStyle = cols[(ring + 1) % cols.length]; g.lineWidth = 1; g.stroke();
+    g.beginPath(); g.arc(0, 0, r - 46, 0, Math.PI * 2); g.lineWidth = 6; g.strokeStyle = "#e8b440"; g.stroke();
   }
-  g.globalAlpha = 1; g.strokeStyle = "#39ff14"; g.lineWidth = 3;
-  for (let i = 0; i < 6; i++) { g.save(); g.rotate(i * Math.PI / 3); g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -60); g.lineTo(52, -30); g.closePath(); g.stroke(); g.restore(); }
+  g.beginPath(); g.arc(0, 0, 40, 0, Math.PI * 2); g.fillStyle = "#3a1460"; g.fill(); g.lineWidth = 8; g.strokeStyle = "#f6cf5a"; g.stroke();
 });
-const texA = mandalaTex(UV), texB = mandalaTex([0xff00e6, 0x00e5ff, 0x8a2bff, 0x39ff14]);
-const uvMat = (tex) => new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.35, side: THREE.DoubleSide, roughness: 0.9 });
-const tapestry = (w, h, tex, x, y, z, parent, rotY = 0) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), uvMat(tex)); m.position.set(x, y, z); m.rotation.y = rotY; parent.add(m); return m; };
-// Triangular shade sails (voiles géométriques)
-const sail = (a, b, c, tex, parent) => {
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.Float32BufferAttribute([...a, ...b, ...c], 3));
-  geo.setAttribute("uv", new THREE.Float32BufferAttribute([0.5, 1, 0, 0, 1, 0], 2)); geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, uvMat(tex)); m.material.transparent = true; m.material.opacity = 0.9; parent.add(m); return m;
+// Petal prints: white lycra with spiral motifs (teal / green / pink / gold)
+const petalTex = (base, ink, accent) => canvasTex(256, 512, (g, w, h) => {
+  const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, "#ffffff"); grd.addColorStop(0.5, base); grd.addColorStop(1, "#ffffff");
+  g.fillStyle = grd; g.fillRect(0, 0, w, h);
+  g.strokeStyle = ink; g.lineWidth = 5;
+  for (let k = 0; k < 4; k++) {
+    const cx = w / 2, cy = 90 + k * 110;
+    g.beginPath(); for (let a = 0; a < Math.PI * 5; a += 0.15) { const r = 3 + a * 3.2; g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } g.stroke();
+    g.fillStyle = accent; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(cx + Math.cos(i) * 40, cy + Math.sin(i) * 40, 6, 0, Math.PI * 2); g.fill(); }
+  }
+});
+const petalTexs = [petalTex("#7fe0c8", "#c99a1e", "#1aa37a"), petalTex("#ffb3e0", "#b23fb0", "#f2b134"), petalTex("#9fe3ff", "#2b7bd1", "#ff6fb5"), petalTex("#c9ff9f", "#2f8f3a", "#e0a020")];
+const lycraMats = [];
+const lycra = (tex, opts = {}) => { const m = new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.75, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.12, transparent: true, opacity: 0.97, ...opts }); lycraMats.push(m); return m; };
+const ornateMat = lycra(ornateTex);
+
+// "Trumpet tree": funnel column flaring into a lobed canopy with scalloped edge
+const trumpetTree = (x, z, baseY, height, radius, parent) => {
+  const g = new THREE.Group(); g.position.set(x, baseY, z); parent.add(g);
+  const prof = []; for (let i = 0; i <= 24; i++) { const u = i / 24; prof.push(new THREE.Vector2(0.35 + Math.pow(u, 3.2) * radius, u * height)); }
+  const funnel = new THREE.Mesh(new THREE.LatheGeometry(prof, 48), lycra(ornateTex)); funnel.castShadow = true; g.add(funnel);
+  // lobed canopy: flower outline, slight dome, ornate print
+  const lobes = 7, sh = new THREE.Shape();
+  for (let i = 0; i <= 140; i++) { const a = (i / 140) * Math.PI * 2, r = radius * (1.25 + 0.22 * Math.cos(a * lobes)); const px = Math.cos(a) * r, py = Math.sin(a) * r; i ? sh.lineTo(px, py) : sh.moveTo(px, py); }
+  const cg = new THREE.ShapeGeometry(sh, 24); cg.rotateX(-Math.PI / 2);
+  const p = cg.attributes.position, uv = cg.attributes.uv, R = radius * 1.5;
+  for (let i = 0; i < p.count; i++) { const px = p.getX(i), pz = p.getZ(i), d = Math.hypot(px, pz); p.setY(i, -0.9 * (d / R) * (d / R) + 0.25 * Math.sin(Math.atan2(pz, px) * lobes) * (d / R)); uv.setXY(i, px / (2 * R) + 0.5, pz / (2 * R) + 0.5); }
+  cg.computeVertexNormals();
+  const canopy = new THREE.Mesh(cg, lycra(ornateTex)); canopy.position.y = height; canopy.castShadow = true; g.add(canopy);
+  // scalloped white "windows" along the edge
+  const dots = new THREE.InstancedMesh(new THREE.CircleGeometry(0.32, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, emissive: 0xffffff, emissiveIntensity: 0.15 }), 56);
+  const d = new THREE.Object3D();
+  for (let i = 0; i < 56; i++) { const a = (i / 56) * Math.PI * 2, r = radius * (1.25 + 0.22 * Math.cos(a * lobes)) - 0.45; d.position.set(Math.cos(a) * r, height - 0.82, Math.sin(a) * r); d.rotation.set(-Math.PI / 2, 0, 0); d.updateMatrix(); dots.setMatrixAt(i, d.matrix); }
+  g.add(dots); mandalas.push(canopy); return g;
 };
-// LED strip
+// Flying petal (teardrop lycra) on a tension line
+const petalGeo = (() => { const s = new THREE.Shape(); s.moveTo(0, 0); s.bezierCurveTo(1.1, 0.9, 0.9, 2.6, 0, 3.4); s.bezierCurveTo(-0.9, 2.6, -1.1, 0.9, 0, 0); const g = new THREE.ShapeGeometry(s, 16); const uv = g.attributes.uv, p = g.attributes.position; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 2.2 + 0.5, p.getY(i) / 3.4); return g; })();
+const petal = (x, y, z, rx, ry, rz, scale, tex, parent) => {
+  const m = new THREE.Mesh(petalGeo, lycra(tex)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.scale.setScalar(scale); m.castShadow = true;
+  m.userData.base = { y, rz }; parent.add(m); petals.push(m); return m;
+};
+// Star-shaped stretch ("étoile" en lycra) for the lower deck
+const starStretch = (x, y, z, size, tex, parent) => {
+  const s = new THREE.Shape(), n = 6;
+  for (let i = 0; i <= n * 2; i++) { const a = (i / (n * 2)) * Math.PI * 2, r = i % 2 ? size * 0.35 : size; const px = Math.cos(a) * r, py = Math.sin(a) * r; i ? s.quadraticCurveTo(Math.cos(a - Math.PI / (n * 2)) * r * 0.8, Math.sin(a - Math.PI / (n * 2)) * r * 0.8, px, py) : s.moveTo(px, py); }
+  const geo = new THREE.ShapeGeometry(s, 12); geo.rotateX(-Math.PI / 2);
+  const p = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < p.count; i++) { const d = Math.hypot(p.getX(i), p.getZ(i)); p.setY(i, -0.8 * (1 - d / size)); uv.setXY(i, p.getX(i) / (2 * size) + 0.5, p.getZ(i) / (2 * size) + 0.5); }
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, lycra(tex)); m.position.set(x, y, z); parent.add(m); return m;
+};
+// LED strip (kept subtle, for night)
 const led = (len, color, x, y, z, parent, rotY = 0) => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(len, 0.07, 0.07), new THREE.MeshBasicMaterial({ color, toneMapped: false }));
+  const m = new THREE.Mesh(new THREE.BoxGeometry(len, 0.06, 0.06), new THREE.MeshBasicMaterial({ color, toneMapped: false }));
   m.position.set(x, y, z); m.rotation.y = rotY; parent.add(m); leds.push(m); return m;
 };
-// Laser fan from a point
+// Laser fan (night only)
 const laserFan = (x, y, z, parent, n = 7) => {
   const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g);
   for (let i = 0; i < n; i++) {
@@ -468,33 +513,35 @@ const laserFan = (x, y, z, parent, n = 7) => {
   lasers.push(g); return g;
 };
 
-// Roof: sails, mandala backdrop, lasers, LED edges
-const sy = rY + 4.3;
-[[-18, -8], [-8, 2], [2, 12]].forEach(([x0, x1], i) => {
-  sail([x0, sy, -W / 2 + 0.6], [x1, sy - 0.8, -W / 2 + 0.6], [(x0 + x1) / 2, sy - 0.4, W / 2 - 0.6], i % 2 ? texB : texA, techno.roof);
-  sail([x1, sy - 0.2, W / 2 - 0.6], [x0, sy - 0.9, W / 2 - 0.6], [(x0 + x1) / 2 + 4, sy - 0.3, -W / 2 + 0.6], i % 2 ? texA : texB, techno.roof);
+// Rooftop: three trumpet trees + a cloud of flying petals on tension lines
+trumpetTree(-10, 0, rY, 5.2, 3.6, techno.roof);
+trumpetTree(4, -1.2, rY, 5.8, 4.0, techno.roof);
+trumpetTree(15, 1.2, rY, 4.8, 3.2, techno.roof);
+const lineMat = new THREE.LineBasicMaterial({ color: 0xd8c9a8 });
+[[-19, 0.2], [-3, -0.3], [10, 0.25], [20, -0.2]].forEach(([x], i) => {
+  const pts = [new THREE.Vector3(x, rY + 7.2, -W / 2 - 1), new THREE.Vector3(x + (i % 2 ? 3 : -3), rY + 6.4, W / 2 + 1)];
+  techno.roof.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
 });
-[-18, -8, 2, 12].forEach(x => { cyl(0.06, 0.06, 4.3, mat.frame, x, rY, -W / 2 + 0.6, techno.roof, 6); cyl(0.06, 0.06, 4.3, mat.frame, x, rY, W / 2 - 0.6, techno.roof, 6); });
-const bigMandala = new THREE.Mesh(new THREE.CircleGeometry(2.2, 48), uvMat(texA)); bigMandala.position.set(-13.75, rY + 2.6, 0); bigMandala.rotation.y = Math.PI / 2; techno.roof.add(bigMandala); mandalas.push(bigMandala);
-laserFan(-12, rY + 1.6, 0, techno.roof, 9);
+for (let i = 0; i < 22; i++) {
+  const x = -20 + (i * 41 / 22) + Math.sin(i * 2.3) * 1.2, z = Math.sin(i * 1.7) * (W / 2 - 1), y = rY + 6.4 + Math.cos(i * 1.3) * 0.7;
+  petal(x, y, z, -Math.PI / 2 + 0.5 * Math.sin(i), i * 0.9, 0.4 * Math.cos(i * 1.1), 0.75 + (i % 3) * 0.18, petalTexs.at(i % 4), techno.roof);
+}
+// tall masts for the petal lines
+[-19, -3, 10, 20].forEach(x => { cyl(0.08, 0.1, 7.2, M(0xb48a52), x, rY, -W / 2 - 0.6, techno.roof, 8); cyl(0.08, 0.1, 6.4, M(0xb48a52), x, rY, W / 2 + 0.6, techno.roof, 8); });
+laserFan(-12, rY + 1.6, 0, techno.roof, 7);
 led(L + 2, 0x00e5ff, -1, rY + 1.1, W / 2 + 0.28, techno.roof); led(L + 2, 0xff00e6, -1, rY + 1.1, -W / 2 - 0.28, techno.roof);
-led(L + 2, 0x39ff14, -1, rY - 0.02, W / 2 + 0.32, techno.roof); led(L + 2, 0x39ff14, -1, rY - 0.02, -W / 2 - 0.32, techno.roof);
-neon(["LOST IN", "THE SOUND"], "#d8ffd0", "#39ff14", 4.4, 1.9, 9, rY + 2.6, -W / 2 + 1.6, techno.roof);
 
-// RDC: UV tapestries behind the glass + LED frame
-[-6, 2, 10].forEach((x, i) => tapestry(5, 2.6, i % 2 ? texB : texA, roomX + x - 2, rdcY + 1.9, W / 2 - 0.45, techno.rdc));
-tapestry(6, 2.6, texB, roomX + 4, rdcY + 1.9, -W / 2 + 0.45, techno.rdc, Math.PI);
-led(roomL, 0xff00e6, roomX, rdcY + rdcH + 0.1, W / 2 - 0.25, techno.rdc); led(roomL, 0x00e5ff, roomX, rdcY + 0.3, W / 2 - 0.25, techno.rdc);
-led(roomL, 0xff00e6, roomX, rdcY + rdcH + 0.1, -W / 2 + 0.25, techno.rdc);
-laserFan(roomX - 10.5, rdcY + 2.4, 0.5, techno.rdc, 5);
+// RDC: ornate tapestries behind the glass + petals along the facade
+[-6, 4].forEach((x) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(6, 2.8), lycra(ornateTex)); m.position.set(roomX + x, rdcY + 1.9, W / 2 - 0.45); techno.rdc.add(m); });
+for (let i = 0; i < 9; i++) petal(roomX - 13 + i * 3.3, rdcY + rdcH - 0.2, W / 2 + 0.6, -0.25, 0, Math.PI + (i % 2 ? 0.35 : -0.35), 0.5, petalTexs.at(i % 4), techno.rdc);
+led(roomL, 0xff00e6, roomX, rdcY + rdcH + 0.1, W / 2 - 0.25, techno.rdc);
 
-// Hull & Seine terrace: neon outlines + mandala
-led(L, 0x39ff14, 0, 0.15, W / 2 + 0.06, techno.seine); led(L, 0x39ff14, 0, 0.15, -W / 2 - 0.06, techno.seine);
+// Rez-de-Seine terrace: star-shaped stretches + a small trumpet
+starStretch(-L / 2 - 6, 4.6, 0, 6, petalTexs[2], techno.seine);
+[[-L / 2 - 11, -4.5], [-L / 2 - 11, 4.5], [-L / 2 - 1, -4.5], [-L / 2 - 1, 4.5]].forEach(([x, z]) => cyl(0.06, 0.06, 4.0, M(0xb48a52), x, 0.9, z, techno.seine, 6));
 led(L, 0x8a2bff, 0, 2.2, W / 2 + 0.1, techno.seine); led(L, 0x8a2bff, 0, 2.2, -W / 2 - 0.1, techno.seine);
-const smallMandala = new THREE.Mesh(new THREE.CircleGeometry(1.8, 48), uvMat(texB)); smallMandala.position.set(-L / 2 - 12.05, 2.6, 0); smallMandala.rotation.y = -Math.PI / 2; techno.seine.add(smallMandala); mandalas.push(smallMandala);
-led(12, 0x00e5ff, -L / 2 - 6, 1.95, W / 2 - 0.1, techno.seine); led(12, 0xff00e6, -L / 2 - 6, 1.95, -W / 2 + 0.1, techno.seine);
 
-[[-6, rY + 3, 0, 0x8a2bff], [8, rY + 3, 0, 0x39ff14], [roomX, rdcY + 2.4, 0, 0xff00e6], [-L / 2 - 6, 2.2, 0, 0x00e5ff]].forEach(([x, y, z, c]) => {
+[[-6, rY + 3, 0, 0x8a2bff], [8, rY + 3, 0, 0x2bb5a3], [roomX, rdcY + 2.4, 0, 0xff00e6], [-L / 2 - 6, 2.2, 0, 0xf4c95d]].forEach(([x, y, z, c]) => {
   const p = new THREE.PointLight(c, 0, 24, 1.4); p.position.set(x, y, z); barge.add(p); technoLights.push(p);
 });
 
@@ -502,7 +549,7 @@ led(12, 0x00e5ff, -L / 2 - 6, 1.95, W / 2 - 0.1, techno.seine); led(12, 0xff00e6
 const theme = { name: "classic" };
 const ALT = {
   disco: { hull: M(0x2a1a3d, { metalness: 0.3, roughness: 0.5 }), deck: M(0xc98b5a), white: M(0xffe3c2) },
-  techno: { hull: M(0x0b0b10, { metalness: 0.6, roughness: 0.35 }), deck: M(0x1c1a24), white: M(0x2a2733) },
+  techno: { hull: M(0x2b1745, { metalness: 0.3, roughness: 0.5 }), deck: M(0xa8865e), white: M(0xf3eadb) },
 };
 const swaps = [];
 scene.traverse(o => { if (o.isMesh && (o.material === mat.hull || o.material === mat.white || o.material === mat.deck)) swaps.push({ o, base: o.material, key: o.material === mat.hull ? "hull" : o.material === mat.deck ? "deck" : "white" }); });
@@ -514,8 +561,7 @@ function applyTheme(name) {
   swaps.forEach(({ o, base, key }) => { const m = name === "classic" ? base : ALT[name][key]; o.material = m; o.userData.m0 = m; o.userData.mDim = undefined; });
   bDisco.classList.toggle("on", name === "disco"); bTechno.classList.toggle("on", name === "techno");
   bDisco.textContent = name === "disco" ? "Style classique" : "Style disco ✦";
-  bTechno.textContent = name === "techno" ? "Style classique" : "Style techno ◈";
-  if (name === "techno" && !night) document.getElementById("bNight").click();
+  bTechno.textContent = name === "techno" ? "Style classique" : "Style psytrance ◈";
 }
 bDisco.onclick = () => applyTheme(theme.name === "disco" ? "classic" : "disco");
 bTechno.onclick = () => applyTheme(theme.name === "techno" ? "classic" : "techno");
@@ -600,8 +646,10 @@ function animate() {
   if (theme.name === "techno") {
     const strobe = Math.sin(t * 22) > 0.85 ? 1 : 0;
     technoLights.forEach((p, i) => p.intensity = nightT * (30 + 25 * Math.sin(t * 5 + i * 2) + strobe * 60) + (1 - nightT) * 5);
-    lasers.forEach((g, k) => { g.rotation.y = Math.sin(t * 0.9 + k) * 0.9; g.rotation.x = Math.sin(t * 0.6 + k) * 0.25; g.children.forEach((b, i) => { b.material.opacity = (0.25 + 0.6 * nightT) * (0.6 + 0.4 * Math.sin(t * 8 + i)); b.material.color.setHex(UV.at(Math.floor(t * 0.5 + k) % 3)); }); });
-    mandalas.forEach((m, i) => m.rotation.z = t * (i ? -0.25 : 0.18));
+    lasers.forEach((g, k) => { g.rotation.y = Math.sin(t * 0.9 + k) * 0.9; g.rotation.x = Math.sin(t * 0.6 + k) * 0.25; g.children.forEach((b, i) => { b.material.opacity = 0.8 * nightT * (0.6 + 0.4 * Math.sin(t * 8 + i)); b.material.color.setHex(UV.at(Math.floor(t * 0.5 + k) % 3)); }); });
+    mandalas.forEach((m, i) => m.rotation.y = Math.sin(t * 0.15 + i) * 0.08);
+    petals.forEach((m, i) => { m.position.y = m.userData.base.y + Math.sin(t * 1.1 + i) * 0.12; m.rotation.z = m.userData.base.rz + Math.sin(t * 0.8 + i * 0.7) * 0.08; });
+    lycraMats.forEach(m => m.emissiveIntensity = 0.12 + 0.55 * nightT);
     const hueShift = (t * 0.08) % 1;
     leds.forEach((m, i) => m.material.color.setHSL((hueShift + i * 0.13) % 1, 1, 0.55));
   } else technoLights.forEach(p => p.intensity = 0);
