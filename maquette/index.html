@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le Mazette – Maquette 3D de la péniche</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root{--night:#141a33;--sun:#ff8a3d;--sun2:#ffc857;--rose:#ff5d73;--cream:#fff7ec;--ink:#1b1b22;--muted:#6b6a75;--water:#3b6e8f;--danger:#d43c3c}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"DM Sans",system-ui,sans-serif;background:var(--night);color:var(--ink)}
+  #scene{position:fixed;inset:0}
+  .panel{position:fixed;background:rgba(255,247,236,.94);backdrop-filter:blur(8px);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  #info{top:16px;left:16px;width:min(340px,calc(100vw - 32px));padding:16px 18px}
+  #info h1{font-family:"Syne",sans-serif;font-size:22px;margin:0;line-height:1.05}
+  #info .head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  #bFold{padding:5px 10px;font-size:12px}
+  #info.folded{width:auto;padding:10px 12px}
+  #info.folded #infoBody{display:none}
+  #info.folded h1{font-size:18px}
+  #info h1 span{color:var(--sun)}
+  #info .sub{font-size:12.5px;color:var(--muted);margin:6px 0 10px}
+  .lvl{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:10px;cursor:pointer;border:1.5px solid transparent;margin:4px 0;transition:background .15s,border-color .15s}
+  .lvl:hover{background:#fff}
+  .lvl.on{border-color:var(--sun);background:#fff3e6}
+  .sw{width:12px;height:12px;border-radius:3px;flex:none;margin-top:4px}
+  .lvl b{font-size:14px;display:block}
+  .lvl small{font-size:12px;color:var(--muted);line-height:1.35;display:block}
+  #controls{right:16px;top:16px;width:min(300px,calc(100vw - 32px));padding:14px 16px}
+  #controls h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  button{font:inherit;font-size:13px;font-weight:700;border:1.5px solid #e7d9c6;background:#fff;color:var(--ink);border-radius:99px;padding:7px 12px;cursor:pointer}
+  button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  input[type=range]{width:100%;accent-color:var(--water)}
+  .crue-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+  .crue-top b{font-variant-numeric:tabular-nums}
+  #alert{font-size:12.5px;line-height:1.4;border-radius:10px;padding:8px 10px;margin-top:8px;background:#eaf3f8;color:#24455a}
+  #alert.bad{background:#fde6e6;color:#8a1f1f}
+  #alert.warn{background:#fff0d6;color:#7a4b00}
+  #foot{left:16px;bottom:16px;padding:8px 12px;font-size:11.5px;color:var(--muted);max-width:min(520px,calc(100vw - 32px))}
+  .lab{font-size:12px;font-weight:700;color:#fff;background:rgba(20,26,51,.82);padding:4px 9px;border-radius:99px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.25)}
+  .lab.q{background:rgba(120,110,95,.85)}
+  #loading{position:fixed;inset:0;display:grid;place-items:center;color:var(--cream);font-family:"Syne";font-size:20px}
+  @media (max-width:760px){
+    #controls{top:auto;bottom:16px;right:16px}
+    #foot{display:none}
+    #info{max-height:45vh;overflow:auto}
+  }
+</style>
+</head>
+<body>
+<div id="loading">Mise à l'eau de la péniche…</div>
+<div id="scene"></div>
+
+<div class="panel" id="info">
+  <div class="head"><h1>Le <span>Mazette</span></h1><button id="bFold" aria-expanded="true" aria-controls="infoBody" title="Réduire">Réduire ▴</button></div>
+  <div id="infoBody">
+  <div class="sub">69 Port de la Rapée, Paris 12e · 4 espaces sur 3 niveaux · jusqu'à 1 300 personnes</div>
+  <div class="lvl" data-l="roof"><div class="sw" style="background:#ff8a3d"></div><div><b>Rooftop · 450 m²</b><small>Open air sur la Seine, 450 personnes debout. Bar, DJ, BBQ ou street food.</small></div></div>
+  <div class="lvl" data-l="rdc"><div class="sw" style="background:#ffc857"></div><div><b>Rez-de-chaussée · 450 m²</b><small>Salle principale et terrasse couverte, de plain-pied avec le quai. Restaurant Facette et dancefloor après 22h30.</small></div></div>
+  <div class="lvl" data-l="seine"><div class="sw" style="background:#ff5d73"></div><div><b>Rez-de-Seine · 100 m² + 150 m²</b><small>Salle intérieure au ras de l'eau et terrasse de 150 m².</small></div></div>
+  </div>
+</div>
+
+<div class="panel" id="controls">
+  <h2>Vue</h2>
+  <div class="row">
+    <button id="bExplode">Éclater les niveaux</button>
+    <button id="bNight">Nuit</button>
+    <button id="bSpin" class="on">Rotation</button>
+    <button id="bTheme">Style disco ✦</button>
+  </div>
+  <h2>Simulation de crue</h2>
+  <div class="crue-top"><span>Niveau à Paris-Austerlitz</span><b id="lvlTxt">1,0 m</b></div>
+  <input id="crue" type="range" min="1" max="7" step="0.1" value="1">
+  <div id="alert">Niveau normal : le quai est accessible.</div>
+</div>
+
+<div class="panel" id="foot">Maquette indicative construite à partir des surfaces publiées (lemazette.com, Privateaser). Les proportions sont simplifiées. Les seuils de crue sont illustratifs : la fermeture réelle des berges dépend des décisions de la Ville et de la préfecture.</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+const el = document.getElementById("scene");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+el.appendChild(renderer.domElement);
+
+const labels = new CSS2DRenderer();
+labels.setSize(innerWidth, innerHeight);
+labels.domElement.style.position = "fixed";
+labels.domElement.style.inset = "0";
+labels.domElement.style.pointerEvents = "none";
+el.appendChild(labels.domElement);
+
+const scene = new THREE.Scene();
+const DAY_SKY = new THREE.Color(0xbfd9ea), NIGHT_SKY = new THREE.Color(0x0e1328);
+scene.background = DAY_SKY.clone();
+scene.fog = new THREE.Fog(DAY_SKY.clone(), 90, 220);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 500);
+camera.position.set(52, 30, 48);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 4, 0);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.48;
+controls.minDistance = 20; controls.maxDistance = 140;
+controls.autoRotate = true; controls.autoRotateSpeed = 0.5;
+
+// ---------- Lights
+const hemi = new THREE.HemisphereLight(0xffffff, 0x445566, 0.9);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1dd, 1.6);
+sun.position.set(40, 60, 30);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 200 });
+scene.add(sun);
+
+// ---------- Materials
+const M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.8, metalness: 0.05, ...o });
+const mat = {
+  hull: M(0x22303f, { metalness: 0.4, roughness: 0.6 }),
+  hullStripe: M(0xff5d73),
+  deck: M(0x9a7b5a),
+  deckDark: M(0x6e5640),
+  white: M(0xf1ece4),
+  frame: M(0x2b2b33, { metalness: 0.5, roughness: 0.4 }),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0xa8d0e6, transparent: true, opacity: 0.35, roughness: 0.05, metalness: 0, transmission: 0 }),
+  stone: M(0xb9ad9a),
+  stoneDark: M(0x8f8574),
+  road: M(0x5c5c60),
+  bar: M(0x3a2a20),
+  sunM: M(0xff8a3d), yellow: M(0xffc857), rose: M(0xff5d73),
+  plant: M(0x4f7d4a), trunk: M(0x5b4636),
+  booth: M(0x1d1d24, { metalness: 0.3 }),
+};
+
+const shadow = (m) => { m.castShadow = true; m.receiveShadow = true; return m; };
+const box = (w, h, d, m, x = 0, y = 0, z = 0, parent) => {
+  const mesh = shadow(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m));
+  mesh.position.set(x, y + h / 2, z);
+  (parent || scene).add(mesh);
+  return mesh;
+};
+const cyl = (rt, rb, h, m, x, y, z, parent, seg = 16) => {
+  const mesh = shadow(new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m));
+  mesh.position.set(x, y + h / 2, z);
+  (parent || scene).add(mesh);
+  return mesh;
+};
+const label = (text, parent, x, y, z, cls = "") => {
+  const d = document.createElement("div"); d.className = "lab " + cls; d.textContent = text;
+  const o = new CSS2DObject(d); o.position.set(x, y, z); parent.add(o); return o;
+};
+const railing = (len, parent, x, y, z, rotY = 0) => {
+  const g = new THREE.Group();
+  const top = new THREE.Mesh(new THREE.BoxGeometry(len, 0.08, 0.08), mat.frame); top.position.y = 1.05; g.add(top);
+  const mid = new THREE.Mesh(new THREE.BoxGeometry(len, 0.04, 0.04), mat.frame); mid.position.y = 0.55; g.add(mid);
+  const n = Math.max(2, Math.round(len / 1.6));
+  for (let i = 0; i <= n; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.1, 0.07), mat.frame); p.position.set(-len / 2 + (len * i) / n, 0.55, 0); g.add(p); }
+  const glassP = new THREE.Mesh(new THREE.BoxGeometry(len, 0.9, 0.03), mat.glass); glassP.position.y = 0.5; g.add(glassP);
+  g.position.set(x, y, z); g.rotation.y = rotY; parent.add(g); return g;
+};
+
+// ---------- World: water, quay
+const WATER_BASE = 0; // y of water at "1 m" Austerlitz
+const QUAY_Y = 2.6;   // bas-port surface height above normal water
+const waterGeo = new THREE.PlaneGeometry(400, 400, 80, 80);
+const waterMat = new THREE.MeshStandardMaterial({ color: 0x3b6e8f, roughness: 0.25, metalness: 0.15, transparent: true, opacity: 0.92 });
+const water = new THREE.Mesh(waterGeo, waterMat);
+water.rotation.x = -Math.PI / 2; water.receiveShadow = true; scene.add(water);
+const riverBed = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), M(0x1d3342)); riverBed.rotation.x = -Math.PI / 2; riverBed.position.y = -4; scene.add(riverBed);
+
+// Bas-port (lower quay) along -z side, upper quay & road further back
+const quay = new THREE.Group(); scene.add(quay);
+box(200, QUAY_Y + 4, 10, mat.stone, 0, -4, -14, quay);            // bas-port slab
+box(200, 0.05, 0.5, mat.stoneDark, 0, QUAY_Y, -9.3, quay);       // edge line
+box(200, 9.5, 2, mat.stoneDark, 0, -4, -20, quay);               // retaining wall
+box(200, 0.6, 18, mat.road, 0, 5.5, -30, quay);                  // upper quay road (quai de la Rapée)
+box(200, 0.2, 3, mat.stone, 0, 6.1, -22.5, quay);                // sidewalk
+// stairs down from upper quay
+for (let i = 0; i < 10; i++) box(3, 0.32, 0.55, mat.stone, -30, QUAY_Y + i * 0.32, -15.5 - i * 0.42, quay);
+// trees on upper quay
+for (let x = -90; x <= 90; x += 14) {
+  cyl(0.25, 0.3, 4, mat.trunk, x, 6.3, -24, quay, 8);
+  const c = shadow(new THREE.Mesh(new THREE.SphereGeometry(2.4, 14, 10), mat.plant)); c.position.set(x, 11.5, -24); quay.add(c);
+}
+// Viaduc d'Austerlitz hint far upstream
+const viaduct = new THREE.Group(); scene.add(viaduct);
+const arch = new THREE.Mesh(new THREE.TorusGeometry(40, 1.2, 8, 48, Math.PI), M(0x6e7f8c, { metalness: 0.6 }));
+arch.position.set(-120, 6, 0); arch.rotation.y = Math.PI / 2; viaduct.add(arch);
+box(2, 1.2, 120, M(0x6e7f8c, { metalness: 0.6 }), -120, 6, 0, viaduct);
+label("Viaduc d'Austerlitz (ligne 5)", viaduct, -120, 49, 0, "q");
+label("Quai de la Rapée", quay, 30, 7.5, -30, "q");
+const quayLabel = label("Bas-port (accès piéton)", quay, 30, QUAY_Y + 1.2, -14, "q");
+
+// ---------- The barge
+const barge = new THREE.Group(); scene.add(barge);
+const L = 40, W = 11.2;
+const levels = { seine: new THREE.Group(), rdc: new THREE.Group(), roof: new THREE.Group() };
+Object.values(levels).forEach(g => barge.add(g));
+
+// Hull: from -1.8 (below waterline) to 2.6 (main deck, level with quay)
+const hullShape = new THREE.Shape();
+hullShape.moveTo(-L / 2, -W / 2); hullShape.lineTo(L / 2 - 3, -W / 2);
+hullShape.quadraticCurveTo(L / 2 + 1, -W / 2, L / 2 + 1.2, 0);
+hullShape.quadraticCurveTo(L / 2 + 1, W / 2, L / 2 - 3, W / 2);
+hullShape.lineTo(-L / 2, W / 2); hullShape.lineTo(-L / 2, -W / 2);
+const hullGeo = new THREE.ExtrudeGeometry(hullShape, { depth: 4.4, bevelEnabled: false });
+hullGeo.rotateX(-Math.PI / 2); hullGeo.translate(0, -1.8, 0);
+const hull = shadow(new THREE.Mesh(hullGeo, mat.hull)); levels.seine.add(hull);
+box(L + 0.4, 0.35, W + 0.1, mat.hullStripe, -0.2, 2.05, 0, levels.seine);   // rose band
+
+// Rez-de-Seine: windows strip in the hull (stern 10 m) + lower terrace platform at stern (150 m²)
+for (let i = 0; i < 7; i++) {
+  const w = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 0.05), new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffa040, emissiveIntensity: 0.0 }));
+  w.position.set(-L / 2 + 2 + i * 1.5, 0.9, W / 2 + 0.03); levels.seine.add(w); w.userData.lamp = true;
+}
+const seineTerrace = new THREE.Group(); levels.seine.add(seineTerrace);
+box(12, 0.5, W, mat.deckDark, -L / 2 - 6, 0.4, 0, seineTerrace);     // pontoon terrace 12 x 11 ≈ 130-150 m²
+box(12, 1.3, W, mat.hull, -L / 2 - 6, -0.9, 0, seineTerrace);
+railing(12, seineTerrace, -L / 2 - 6, 0.9, W / 2 - 0.1);
+railing(12, seineTerrace, -L / 2 - 6, 0.9, -W / 2 + 0.1);
+railing(W, seineTerrace, -L / 2 - 12, 0.9, 0, Math.PI / 2);
+for (let i = 0; i < 4; i++) { cyl(0.45, 0.45, 0.7, mat.white, -L / 2 - 9 + (i % 2) * 5, 0.9, -2.5 + Math.floor(i / 2) * 5, seineTerrace, 14); }
+label("Rez-de-Seine · terrasse 150 m²", levels.seine, -L / 2 - 6, 2.6, 0);
+
+// RDC: main room (glass box) 30 m + covered terrace 10 m, floor at 2.6
+const rdcY = 2.6, rdcH = 3.4;
+box(L, 0.2, W, mat.deck, 0, rdcY, 0, levels.rdc);
+// glass walls of main room (x from -L/2+10 to L/2-2)
+const roomL = 28, roomX = 4;
+const glassBox = new THREE.Mesh(new THREE.BoxGeometry(roomL, rdcH, W - 0.6), mat.glass); glassBox.position.set(roomX, rdcY + 0.2 + rdcH / 2, 0); levels.rdc.add(glassBox);
+for (let i = 0; i <= 14; i++) { box(0.12, rdcH, 0.12, mat.frame, roomX - roomL / 2 + (roomL * i) / 14, rdcY + 0.2, W / 2 - 0.3, levels.rdc); box(0.12, rdcH, 0.12, mat.frame, roomX - roomL / 2 + (roomL * i) / 14, rdcY + 0.2, -W / 2 + 0.3, levels.rdc); }
+// covered terrace posts (stern side)
+for (let i = 0; i < 4; i++) { cyl(0.12, 0.12, rdcH, mat.frame, -L / 2 + 0.8 + i * 3, rdcY + 0.2, W / 2 - 0.4, levels.rdc, 8); cyl(0.12, 0.12, rdcH, mat.frame, -L / 2 + 0.8 + i * 3, rdcY + 0.2, -W / 2 + 0.4, levels.rdc, 8); }
+railing(10, levels.rdc, -L / 2 + 5, rdcY + 0.2, W / 2 - 0.15);
+// interior: bar + dancefloor + Facette tables
+box(9, 1.1, 1.4, mat.bar, roomX + 6, rdcY + 0.2, -3.2, levels.rdc);
+box(9, 0.08, 1.6, mat.yellow, roomX + 6, rdcY + 1.3, -3.2, levels.rdc);
+const floor = box(10, 0.04, 6, M(0x2a2238, { emissive: 0x5a2a6a, emissiveIntensity: 0.0 }), roomX - 6, rdcY + 0.21, 0.5, levels.rdc); floor.userData.lamp = true;
+for (let i = 0; i < 6; i++) cyl(0.5, 0.5, 0.75, mat.white, roomX + 2 + (i % 3) * 2.6, rdcY + 0.2, 1.8 + Math.floor(i / 3) * 2, levels.rdc, 14);
+box(2, 1.2, 1.2, mat.booth, roomX - 10.5, rdcY + 0.2, 0.5, levels.rdc);
+label("Rez-de-chaussée · 450 m² · Facette", levels.rdc, roomX, rdcY + rdcH + 0.8, W / 2 + 0.5);
+
+// Roof deck at rdcY + rdcH + 0.2
+const roofY = rdcY + 0.2 + rdcH;
+box(L + 2, 0.35, W + 0.6, mat.white, -1, roofY, 0, levels.roof);
+box(L + 2, 0.06, W + 0.6, mat.deck, -1, roofY + 0.35, 0, levels.roof);
+const rY = roofY + 0.41;
+railing(L + 2, levels.roof, -1, rY, W / 2 + 0.2);
+railing(L + 2, levels.roof, -1, rY, -W / 2 - 0.2);
+railing(W + 0.4, levels.roof, -L / 2 - 2, rY, 0, Math.PI / 2);
+railing(W + 0.4, levels.roof, L / 2, rY, 0, Math.PI / 2);
+// rooftop bar, DJ booth, parasols, string lights, planters
+box(8, 1.1, 1.4, mat.bar, 8, rY, -3.8, levels.roof);
+box(8, 0.08, 1.6, mat.sunM, 8, rY + 1.1, -3.8, levels.roof);
+box(2.6, 1.2, 1.4, mat.booth, -12, rY, 0, levels.roof);
+box(3.4, 0.08, 2.2, mat.sunM, -12, rY + 2.6, 0, levels.roof);
+[-11.5, -12.5].forEach(z => cyl(0.06, 0.06, 2.6, mat.frame, -13.4, rY, z + 12.5 - 12, levels.roof, 6));
+const parasolCols = [mat.sunM, mat.yellow, mat.rose];
+for (let i = 0; i < 6; i++) {
+  const x = -4 + (i % 3) * 7, z = i < 3 ? 2.5 : -0.5 + (i === 5 ? 0 : 0);
+  if (i >= 3 && i !== 4) continue;
+  cyl(0.05, 0.05, 2.4, mat.frame, x, rY, z, levels.roof, 6);
+  const cone = shadow(new THREE.Mesh(new THREE.ConeGeometry(1.8, 0.7, 12), parasolCols.at(i % 3))); cone.position.set(x, rY + 2.6, z); levels.roof.add(cone);
+  cyl(0.6, 0.6, 0.75, mat.white, x, rY, z, levels.roof, 14);
+}
+for (let i = 0; i < 8; i++) { box(1.2, 0.6, 1.2, mat.trunk, -18 + i * 5, rY, -W / 2 + 0.9, levels.roof); const b = shadow(new THREE.Mesh(new THREE.SphereGeometry(0.75, 10, 8), mat.plant)); b.position.set(-18 + i * 5, rY + 1.05, -W / 2 + 0.9); levels.roof.add(b); }
+// string lights
+const bulbs = [];
+const bulbMat = new THREE.MeshStandardMaterial({ color: 0xfff1c9, emissive: 0xffc46b, emissiveIntensity: 0.2 });
+for (let side of [-1, 1]) {
+  for (let i = 0; i <= 18; i++) {
+    const x = -L / 2 + (L * i) / 18, sag = Math.sin((i % 6) / 6 * Math.PI) * 0.4;
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), bulbMat); b.position.set(x, rY + 3 - sag, side * (W / 2 - 1.2)); levels.roof.add(b); bulbs.push(b);
+  }
+  for (let i = 0; i <= 3; i++) cyl(0.05, 0.05, 3, mat.frame, -L / 2 + (L * i) / 3, rY, side * (W / 2 - 1.2), levels.roof, 6);
+}
+label("Rooftop · 450 m² · open air", levels.roof, 0, rY + 4.2, 0);
+
+// Gangway (passerelle) from bas-port to RDC
+const gang = new THREE.Group(); scene.add(gang);
+box(2.2, 0.15, 3.6, mat.frame, 0, 0, 0, gang);
+railing(3.6, gang, 1.05, 0.1, 0, Math.PI / 2); railing(3.6, gang, -1.05, 0.1, 0, Math.PI / 2);
+const gangLabel = label("Passerelle d'accès", gang, 0, 1.8, 0);
+
+// Mooring posts on quay
+for (let x of [-16, 16]) cyl(0.35, 0.4, 1, M(0x333338), x, QUAY_Y, -9.8, quay, 10);
+
+// Night lights
+const nightLights = [];
+[[0, roofY + 3.5, 0, 0xff9a4a], [roomX, rdcY + 2.8, 0, 0xffc857], [-L / 2 - 6, 2.4, 0, 0xff5d73], [roomX - 6, rdcY + 2.5, 0.5, 0xb25cff]].forEach(([x, y, z, c]) => {
+  const p = new THREE.PointLight(c, 0, 26, 1.6); p.position.set(x, y, z); barge.add(p); nightLights.push(p);
+});
+
+// ---------- Disco theme (D.A. années 70 : boules à facettes, voilages, franges, néons, CD)
+const disco = { seine: new THREE.Group(), rdc: new THREE.Group(), roof: new THREE.Group() };
+Object.entries(disco).forEach(([k, g]) => { g.visible = false; levels[k].add(g); });
+const discoLights = [], discoBalls = [], beams = [];
+const PALETTE = [0xff4fa3, 0xffc23d, 0xff7a2f, 0x2ec4b6, 0x8e44ec, 0xe63946, 0xf4d35e, 0x3ddc97];
+
+function canvasTex(w, h, draw) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  draw(c.getContext("2d"), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+// Mosaic texture for disco balls (multicolour mirror tiles)
+const mosaicTex = canvasTex(512, 256, (g, w, h) => {
+  const cols = ["#d9d9e0", "#f2f2f5", "#b8b8c4", "#ff4fa3", "#ffc23d", "#2ec4b6", "#ff7a2f", "#8e44ec", "#ffffff", "#9fa3b5"];
+  const n = 48, m = 24, tw = w / n, th = h / m;
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
+    g.fillStyle = cols[Math.random() < 0.55 ? Math.floor(Math.random() * 3) + (Math.random() < 0.3 ? 8 : 0) : 3 + Math.floor(Math.random() * 5)];
+    g.fillRect(i * tw + 1, j * th + 1, tw - 2, th - 2);
+  }
+});
+const ballMat = new THREE.MeshStandardMaterial({ map: mosaicTex, metalness: 0.85, roughness: 0.18, emissive: 0xffffff, emissiveMap: mosaicTex, emissiveIntensity: 0.05 });
+const discoBall = (r, x, y, z, parent, hang = 1.2) => {
+  const g = new THREE.Group();
+  const s = shadow(new THREE.Mesh(new THREE.SphereGeometry(r, 32, 20), ballMat)); g.add(s);
+  const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, hang, 4), mat.frame); chain.position.y = r + hang / 2; g.add(chain);
+  g.position.set(x, y, z); parent.add(g); discoBalls.push(s);
+  // light beam (visible at night)
+  const beam = new THREE.Mesh(new THREE.ConeGeometry(r * 3.2, 4.5, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xff4fa3, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  beam.position.y = -2.4; g.add(beam); beams.push(beam);
+  return g;
+};
+// Draped fabric (voilage) with sag
+const drape = (len, wid, sag, color, x, y, z, parent, rotY = 0, opacity = 0.82) => {
+  const geo = new THREE.PlaneGeometry(len, wid, 24, 6); geo.rotateX(-Math.PI / 2);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) { const u = (p.getX(i) + len / 2) / len, v = (p.getZ(i) + wid / 2) / wid; p.setY(i, -sag * Math.sin(Math.PI * u) - 0.25 * Math.sin(Math.PI * v * 3)); }
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity, roughness: 0.9 }));
+  m.position.set(x, y, z); m.rotation.y = rotY; m.castShadow = true; parent.add(m); return m;
+};
+// Tinsel fringe curtain (franges métallisées)
+const fringe = (w, h, x, y, z, parent, rotY = 0, cols = PALETTE) => {
+  const n = Math.round(w * 22), geo = new THREE.BoxGeometry(0.035, 1, 0.01);
+  const im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ metalness: 0.9, roughness: 0.25 }), n);
+  const d = new THREE.Object3D(), c = new THREE.Color();
+  const band = Math.max(1, Math.round(n / (w * 1.4)));
+  for (let i = 0; i < n; i++) {
+    const hh = h * (0.82 + Math.random() * 0.18);
+    d.position.set(-w / 2 + (w * i) / n, -hh / 2, (Math.random() - 0.5) * 0.06); d.scale.set(1, hh, 1); d.rotation.z = (Math.random() - 0.5) * 0.06; d.updateMatrix();
+    im.setMatrixAt(i, d.matrix); im.setColorAt(i, c.setHex(cols[Math.floor(i / band + Math.random() * 0.6) % cols.length]));
+  }
+  im.position.set(x, y, z); im.rotation.y = rotY; parent.add(im); return im;
+};
+// Neon sign
+const neon = (lines, color, glow, w, h, x, y, z, parent, rotY = 0) => {
+  const t = canvasTex(1024, Math.round(1024 * h / w), (g, cw, ch) => {
+    g.clearRect(0, 0, cw, ch); g.textAlign = "center"; g.textBaseline = "middle";
+    const fs = ch / (lines.length + 0.6); g.font = `600 ${fs}px "DM Sans", sans-serif`;
+    lines.forEach((ln, i) => { const yy = ch / 2 + (i - (lines.length - 1) / 2) * fs * 0.98;
+      g.shadowColor = glow; g.shadowBlur = 40; g.strokeStyle = glow; g.lineWidth = 10; g.strokeText(ln, cw / 2, yy);
+      g.shadowBlur = 16; g.lineWidth = 5; g.strokeStyle = color; g.strokeText(ln, cw / 2, yy); g.fillStyle = "rgba(255,255,255,.08)"; g.fillText(ln, cw / 2, yy); });
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t, transparent: true, toneMapped: false, depthWrite: false }));
+  m.position.set(x, y, z); m.rotation.y = rotY; parent.add(m); return m;
+};
+// CD / sequin wall
+const discWall = (cols, rows, r, x, y, z, parent, rotY = 0) => {
+  const geo = new THREE.CylinderGeometry(r, r, 0.02, 20); geo.rotateX(Math.PI / 2);
+  const im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ metalness: 0.95, roughness: 0.12 }), cols * rows);
+  const d = new THREE.Object3D(), c = new THREE.Color(), tints = [0xe8e8f0, 0xdfe9ff, 0xffd6ec, 0xd6fff4, 0xfff1c4, 0xff9ed1, 0x9fe6ff, 0xc9a7ff, 0xffb37a];
+  let k = 0;
+  for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+    d.position.set(-((cols - 1) * r * 2.1) / 2 + i * r * 2.1 + (j % 2) * r * 0.5, -j * r * 2.1, 0); d.rotation.set((Math.random() - .5) * .4, (Math.random() - .5) * .6, 0); d.updateMatrix();
+    im.setMatrixAt(k, d.matrix); im.setColorAt(k++, c.setHex(tints[Math.floor(Math.random() * tints.length)]));
+  }
+  im.position.set(x, y, z); im.rotation.y = rotY; parent.add(im); return im;
+};
+// Retro sunburst stripes on the hull
+const stripeTex = canvasTex(1024, 128, (g, w, h) => {
+  const bands = ["#2a1a3d", "#ff4fa3", "#ff7a2f", "#ffc23d", "#2ec4b6", "#2a1a3d"]; const bh = h / bands.length;
+  bands.forEach((c, i) => { g.fillStyle = c; g.fillRect(0, i * bh, w, bh + 1); });
+  g.globalAlpha = 0.9; for (let x = 40; x < w; x += 180) { g.fillStyle = "#fff7ec"; g.beginPath(); g.arc(x, h / 2, 14, 0, Math.PI * 2); g.fill(); }
+});
+const stripeMat = new THREE.MeshStandardMaterial({ map: stripeTex, roughness: 0.6 });
+[1, -1].forEach(s => { const p = new THREE.Mesh(new THREE.PlaneGeometry(L - 3, 2.2), stripeMat); p.position.set(-1.5, 0.9, s * (W / 2 + 0.03)); if (s < 0) p.rotation.y = Math.PI; disco.seine.add(p); });
+
+// Rooftop: voilages + boules + CD wall + neon behind DJ
+const fabricCols = [0xff6f91, 0xffd27a, 0xff9a5a, 0xe8c4ff];
+[-14, -6, 2, 10].forEach((x, i) => drape(9.5, W - 1, 1.1, fabricCols[i], x, rY + 3.7, 0, disco.roof, 0, 0.78));
+drape(L, 2.2, 0.6, 0xffe9b0, -1, rY + 3.9, 0, disco.roof, 0, 0.55);
+[[-15, 1.5], [-9, -2], [-3, 2.2], [3, -1.5], [9, 2], [14, -2.2], [-12, -0.5]].forEach(([x, z], i) => discoBall(0.45 + (i % 3) * 0.15, x, rY + 2.3 - (i % 2) * 0.3, z, disco.roof, 0.8));
+discWall(9, 5, 0.32, L / 2 - 0.6, rY + 3.0, 0, disco.roof, -Math.PI / 2);
+neon(["NO MUSIC", "NO LIFE"], "#ffd1d1", "#ff3b3b", 3.4, 1.6, -13.6, rY + 2.2, 0, disco.roof, Math.PI / 2);
+fringe(3.6, 1.6, -13.5, rY + 3.2, 0, disco.roof, Math.PI / 2, [0xe63946, 0xff4fa3, 0xd9d9e0]);
+
+// RDC: tinsel fringe along the river facade + neon sign + balls inside
+fringe(roomL, 1.1, roomX, rdcY + rdcH + 0.15, W / 2 - 0.1, disco.rdc);
+fringe(roomL, 1.1, roomX, rdcY + rdcH + 0.15, -W / 2 + 0.1, disco.rdc, Math.PI);
+neon(["FOLLOW THE CALL", "OF THE DISCO BALL"], "#fff36b", "#ffb800", 9, 2.2, roomX + 2, rdcY + 1.7, W / 2 - 0.15, disco.rdc);
+[[roomX - 6, 0.5], [roomX - 2, -1.5], [roomX + 6, 2]].forEach(([x, z]) => discoBall(0.55, x, rdcY + rdcH - 0.9, z, disco.rdc, 0.6));
+// covered terrace: sequin strings
+for (let i = 0; i < 3; i++) discWall(14, 4, 0.12, -L / 2 + 5, rdcY + rdcH - 0.1, -3 + i * 3, disco.rdc);
+
+// Rez-de-Seine terrace: voilage + lampions
+drape(12, W - 1, 0.7, 0xffb3c7, -L / 2 - 6, 3.4, 0, disco.seine, 0, 0.7);
+discoBall(0.5, -L / 2 - 6, 2.4, 0, disco.seine, 0.5);
+
+// Disco coloured lights (night)
+[[-8, rY + 2.5, 0, 0xff4fa3], [8, rY + 2.5, 0, 0x2ec4b6], [roomX, rdcY + 2.4, 0, 0xffc23d], [-L / 2 - 6, 2.2, 0, 0x8e44ec]].forEach(([x, y, z, c]) => {
+  const p = new THREE.PointLight(c, 0, 22, 1.4); p.position.set(x, y, z); barge.add(p); discoLights.push(p);
+});
+
+// Theme swap of base materials
+const theme = { disco: false };
+const discoHull = M(0x2a1a3d, { metalness: 0.3, roughness: 0.5 });
+const discoDeck = M(0xc98b5a), discoWhite = M(0xffe3c2);
+const swaps = [];
+scene.traverse(o => { if (o.isMesh && barge !== o && (o.material === mat.hull || o.material === mat.white || o.material === mat.deck)) swaps.push({ o, base: o.material, alt: o.material === mat.hull ? discoHull : o.material === mat.deck ? discoDeck : discoWhite }); });
+function applyTheme() {
+  Object.values(disco).forEach(g => g.visible = theme.disco);
+  swaps.forEach(({ o, base, alt }) => { const m = theme.disco ? alt : base; o.material = m; o.userData.m0 = m; o.userData.mDim = undefined; });
+  [mat.sunM, mat.yellow, mat.rose].forEach(m => m.emissiveIntensity = 0);
+  document.getElementById("bTheme").classList.toggle("on", theme.disco);
+  document.getElementById("bTheme").textContent = theme.disco ? "Style classique" : "Style disco ✦";
+}
+document.getElementById("bTheme").onclick = () => { theme.disco = !theme.disco; applyTheme(); };
+
+// ---------- State
+let explode = 0, explodeT = 0, night = false, nightT = 0, crue = 1, selected = null;
+const baseY = { seine: 0, rdc: 0, roof: 0 };
+const BARGE_Z = -W / 2 - 9.4 + 0.2 - (-W / 2) + 0.2; // barge side touching bas-port edge
+barge.position.z = -9.3 + W / 2 + 0.3;
+
+function setLevelHighlight(name) {
+  selected = selected === name ? null : name;
+  document.querySelectorAll(".lvl").forEach(d => d.classList.toggle("on", d.dataset.l === selected));
+  Object.entries(levels).forEach(([k, g]) => g.traverse(o => {
+    if (o.isMesh && o.material && o.material !== mat.glass) {
+      if (!o.userData.origOpacity) o.userData.origOpacity = { t: o.material.transparent, o: o.material.opacity };
+    }
+  }));
+  if (selected && explode === 0) { explode = 1; document.getElementById("bExplode").classList.add("on"); }
+}
+document.querySelectorAll(".lvl").forEach(d => d.onclick = () => setLevelHighlight(d.dataset.l));
+const infoEl = document.getElementById("info"), foldBtn = document.getElementById("bFold");
+function setFold(f) { infoEl.classList.toggle("folded", f); foldBtn.textContent = f ? "Infos ▾" : "Réduire ▴"; foldBtn.setAttribute("aria-expanded", String(!f)); foldBtn.title = f ? "Afficher les infos" : "Réduire"; }
+foldBtn.onclick = () => setFold(!infoEl.classList.contains("folded"));
+if (innerWidth < 760) setFold(true);
+document.getElementById("bExplode").onclick = e => { explode = explode ? 0 : 1; e.target.classList.toggle("on", !!explode); };
+document.getElementById("bNight").onclick = e => { night = !night; e.target.classList.toggle("on", night); };
+document.getElementById("bSpin").onclick = e => { controls.autoRotate = !controls.autoRotate; e.target.classList.toggle("on", controls.autoRotate); };
+const crueIn = document.getElementById("crue"), lvlTxt = document.getElementById("lvlTxt"), alertEl = document.getElementById("alert");
+crueIn.oninput = () => { crue = parseFloat(crueIn.value); updateCrueText(); };
+function updateCrueText() {
+  lvlTxt.textContent = crue.toFixed(1).replace(".", ",") + " m";
+  const rise = (crue - 1) * 1.0; // metres above normal (illustrative 1:1)
+  if (rise + WATER_BASE < QUAY_Y - 0.6) { alertEl.className = ""; alertEl.textContent = crue < 2.5 ? "Niveau normal : le quai est accessible." : "Vigilance : l'eau monte, le quai reste accessible pour l'instant. C'est le moment d'activer le plan de crue."; if (crue >= 2.5) alertEl.className = "warn"; }
+  else if (rise + WATER_BASE < QUAY_Y + 0.1) { alertEl.className = "warn"; alertEl.textContent = "L'eau atteint le bord du bas-port : les berges sont en général fermées au public. Prévenir clients et équipe, déplacer les événements."; }
+  else { alertEl.className = "bad"; alertEl.textContent = "Bas-port sous l'eau : la péniche flotte et monte avec la Seine, mais plus personne ne peut y accéder à pied. C'est le scénario « Mazette hors les murs »."; }
+}
+updateCrueText();
+
+// ---------- Animate
+const clock = new THREE.Clock();
+const pos = waterGeo.attributes.position;
+const basePosZ = Float32Array.from({ length: pos.count }, (_, i) => pos.getZ(i));
+function animate() {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  explodeT += (explode - explodeT) * Math.min(1, dt * 4);
+  nightT += ((night ? 1 : 0) - nightT) * Math.min(1, dt * 3);
+
+  // water level & waves
+  const rise = (crue - 1) * 1.0;
+  water.position.y = WATER_BASE + rise;
+  for (let i = 0; i < pos.count; i++) { const x = pos.getX(i), y = pos.getY(i); pos.setZ(i, basePosZ[i] + Math.sin(x * 0.15 + t * 1.2) * 0.06 + Math.cos(y * 0.12 + t) * 0.05); }
+  pos.needsUpdate = true;
+
+  // barge floats with water
+  const bob = Math.sin(t * 0.8) * 0.04;
+  barge.position.y = rise + bob;
+  levels.rdc.position.y = explodeT * 4;
+  levels.roof.position.y = explodeT * 9;
+
+  // gangway: spans from quay edge to barge deck; breaks when water over quay
+  const deckY = barge.position.y + rdcY;
+  const quayEdgeZ = -9.3, bargeEdgeZ = barge.position.z - W / 2;
+  const dz = bargeEdgeZ - quayEdgeZ + 3.2, dy = deckY - QUAY_Y;
+  gang.position.set(6, (QUAY_Y + deckY) / 2, quayEdgeZ + 1.4);
+  gang.rotation.x = -Math.atan2(dy, dz);
+  const flooded = water.position.y > QUAY_Y + 0.1;
+  gang.visible = !flooded || water.position.y < QUAY_Y + 1.2;
+  gangLabel.element.textContent = flooded ? "Accès coupé" : "Passerelle d'accès";
+  gangLabel.element.style.background = flooded ? "rgba(212,60,60,.9)" : "";
+
+  // day / night
+  scene.background.copy(DAY_SKY).lerp(NIGHT_SKY, nightT);
+  scene.fog.color.copy(scene.background);
+  hemi.intensity = 0.9 - 0.65 * nightT; sun.intensity = 1.6 - 1.45 * nightT;
+  bulbMat.emissiveIntensity = 0.2 + 2.6 * nightT;
+  nightLights.forEach((p, i) => p.intensity = nightT * (i === 3 ? 30 + 20 * Math.sin(t * 6) : 40));
+  barge.traverse(o => { if (o.userData.lamp) o.material.emissiveIntensity = nightT * (o.material.color.r > 0.5 ? 1.2 : 0.8 + 0.6 * Math.sin(t * 5)); });
+  waterMat.color.setHex(0x3b6e8f).lerp(new THREE.Color(0x14233a), nightT);
+
+  // disco theme animation
+  if (theme.disco) {
+    discoBalls.forEach((b, i) => b.rotation.y = t * (0.5 + (i % 3) * 0.15));
+    ballMat.emissiveIntensity = 0.05 + 0.5 * nightT;
+    const beamCols = [0xff4fa3, 0xffc23d, 0x2ec4b6, 0x8e44ec];
+    beams.forEach((bm, i) => { bm.material.opacity = nightT * (0.14 + 0.08 * Math.sin(t * 3 + i)); bm.material.color.setHex(beamCols.at(Math.floor(t * 0.7 + i) % 4)); bm.rotation.y = t; });
+    discoLights.forEach((p, i) => p.intensity = nightT * (35 + 20 * Math.sin(t * 4 + i * 1.7)) + (1 - nightT) * 4);
+  } else {
+    discoLights.forEach(p => p.intensity = 0);
+  }
+
+  // highlight selected level (dim the others)
+  Object.entries(levels).forEach(([k, g]) => {
+    const dim = selected && k !== selected;
+    g.traverse(o => { if (o.isMesh && o.material !== mat.glass && o.material !== bulbMat) { if (!o.userData.m0) o.userData.m0 = o.material; if (!o.userData.mDim) { o.userData.mDim = o.userData.m0.clone(); o.userData.mDim.transparent = true; o.userData.mDim.opacity = 0.18; } o.material = dim ? o.userData.mDim : o.userData.m0; } });
+    g.children.forEach(c => { if (c.isCSS2DObject) c.visible = !dim; });
+  });
+
+  controls.update();
+  renderer.render(scene, camera);
+  labels.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+document.getElementById("loading").remove();
+animate();
+
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); labels.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
