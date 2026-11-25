@@ -34,17 +34,44 @@
   button{font:inherit;font-size:13px;font-weight:700;border:1.5px solid #e7d9c6;background:#fff;color:var(--ink);border-radius:99px;padding:7px 12px;cursor:pointer}
   button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   input[type=range]{width:100%;accent-color:var(--water)}
-  .crue-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
-  .crue-top b{font-variant-numeric:tabular-nums}
-  #alert{font-size:12.5px;line-height:1.4;border-radius:10px;padding:8px 10px;margin-top:8px;background:#eaf3f8;color:#24455a}
-  #alert.bad{background:#fde6e6;color:#8a1f1f}
-  #alert.warn{background:#fff0d6;color:#7a4b00}
+  #controls .row{margin-bottom:0}
+  #cal{right:16px;bottom:16px;width:min(330px,calc(100vw - 32px));padding:14px 16px;max-height:calc(100vh - 220px);overflow:auto}
+  #cal .head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  #cal h2{font-family:"Syne",sans-serif;font-size:17px;margin:0;line-height:1.1}
+  #cal h2 small{display:block;font-family:"DM Sans";font-size:11.5px;font-weight:500;color:var(--muted);margin-top:2px}
+  #bCalFold{padding:5px 10px;font-size:12px}
+  #cal.folded{width:auto;padding:10px 12px}
+  #cal.folded #calBody{display:none}
+  .cal-nav{display:flex;justify-content:space-between;align-items:center;margin:10px 0 6px;font-weight:700;font-size:14px}
+  .cal-nav button{padding:4px 10px}
+  .cal-nav button:disabled{opacity:.35;cursor:default}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center}
+  .cal-grid .dow{font-size:11px;color:var(--muted);font-weight:700;padding:2px 0}
+  .day{position:relative;border:0;background:transparent;border-radius:9px;min-height:34px;padding:0;font-size:13px;font-weight:500;color:var(--ink);cursor:default}
+  .day.has{background:#ffe2cc;color:#8a3200;font-weight:700;cursor:pointer}
+  .day.has::after{content:"";position:absolute;left:50%;bottom:4px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:#ff6a00}
+  .day.has:hover{background:#ffcfa8}
+  .day.sel{background:#ff6a00;color:#fff}
+  .day.sel::after{background:#fff}
+  .day.we{color:#8a3200}
+  .ev{margin-top:10px;border-radius:12px;padding:10px 12px;background:linear-gradient(135deg,#ff7a1a,#ff4d00);color:#fff}
+  .ev .d{font-size:12px;font-weight:700;opacity:.9;text-transform:uppercase;letter-spacing:.04em}
+  .ev .t{font-family:"Syne",sans-serif;font-size:16px;line-height:1.15;margin:3px 0}
+  .ev .h{font-size:13px}
+  .ev .tag{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:2px 8px;border-radius:99px}
+  .cal-empty{margin-top:10px;font-size:12.5px;color:var(--muted)}
+  .cal-list{margin-top:10px;display:flex;flex-direction:column;gap:2px}
+  .cal-list button{display:flex;gap:8px;align-items:baseline;text-align:left;border:0;border-radius:8px;background:transparent;padding:5px 6px;font-weight:500;font-size:12.5px}
+  .cal-list button:hover,.cal-list button.on{background:#fff0e4}
+  .cal-list b{min-width:46px;color:#c24a00;font-size:12px}
+  .cal-foot{margin-top:8px;font-size:11.5px;color:var(--muted)}
   #foot{left:16px;bottom:16px;padding:8px 12px;font-size:11.5px;color:var(--muted);max-width:min(520px,calc(100vw - 32px))}
   .lab{font-size:12px;font-weight:700;color:#fff;background:rgba(20,26,51,.82);padding:4px 9px;border-radius:99px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.25)}
   .lab.q{background:rgba(120,110,95,.85)}
   #loading{position:fixed;inset:0;display:grid;place-items:center;color:var(--cream);font-family:"Syne";font-size:20px}
   @media (max-width:760px){
-    #controls{top:auto;bottom:16px;right:16px}
+    #controls{top:70px;right:16px}
+    #cal{max-height:60vh}
     #foot{display:none}
     #info{max-height:45vh;overflow:auto}
   }
@@ -73,13 +100,20 @@
     <button id="bTheme">Style disco ✦</button>
     <button id="bTechno">Style psytrance ◈</button>
   </div>
-  <h2>Simulation de crue</h2>
-  <div class="crue-top"><span>Niveau à Paris-Austerlitz</span><b id="lvlTxt">1,0 m</b></div>
-  <input id="crue" type="range" min="1" max="7" step="0.1" value="1">
-  <div id="alert">Niveau normal : le quai est accessible.</div>
 </div>
 
-<div class="panel" id="foot">Maquette indicative construite à partir des surfaces publiées (lemazette.com, Privateaser). Les proportions sont simplifiées. Les seuils de crue sont illustratifs : la fermeture réelle des berges dépend des décisions de la Ville et de la préfecture.</div>
+<div class="panel" id="cal">
+  <div class="head"><h2>Programme<small>Décembre 2026 · Weekend parties till 4 AM</small></h2><button id="bCalFold" aria-expanded="true" aria-controls="calBody">Réduire ▾</button></div>
+  <div id="calBody">
+    <div class="cal-nav"><span id="calMonth">Décembre 2026</span><span style="font-size:12px;color:var(--muted);font-weight:500" id="calCount"></span></div>
+    <div class="cal-grid" id="calGrid" role="grid" aria-label="Calendrier de décembre 2026"></div>
+    <div id="calDetail" aria-live="polite"></div>
+    <div class="cal-list" id="calList"></div>
+    <div class="cal-foot">69 Port de la Rapée, 75012 Paris</div>
+  </div>
+</div>
+
+<div class="panel" id="foot">Maquette indicative construite à partir des surfaces publiées (lemazette.com, Privateaser). Les proportions sont simplifiées.</div>
 
 <script type="importmap">
 { "imports": {
@@ -590,16 +624,59 @@ if (innerWidth < 760) setFold(true);
 document.getElementById("bExplode").onclick = e => { explode = explode ? 0 : 1; e.target.classList.toggle("on", !!explode); };
 document.getElementById("bNight").onclick = e => { night = !night; e.target.classList.toggle("on", night); };
 document.getElementById("bSpin").onclick = e => { controls.autoRotate = !controls.autoRotate; e.target.classList.toggle("on", controls.autoRotate); };
-const crueIn = document.getElementById("crue"), lvlTxt = document.getElementById("lvlTxt"), alertEl = document.getElementById("alert");
-crueIn.oninput = () => { crue = parseFloat(crueIn.value); updateCrueText(); };
-function updateCrueText() {
-  lvlTxt.textContent = crue.toFixed(1).replace(".", ",") + " m";
-  const rise = (crue - 1) * 1.0; // metres above normal (illustrative 1:1)
-  if (rise + WATER_BASE < QUAY_Y - 0.6) { alertEl.className = ""; alertEl.textContent = crue < 2.5 ? "Niveau normal : le quai est accessible." : "Vigilance : l'eau monte, le quai reste accessible pour l'instant. C'est le moment d'activer le plan de crue."; if (crue >= 2.5) alertEl.className = "warn"; }
-  else if (rise + WATER_BASE < QUAY_Y + 0.1) { alertEl.className = "warn"; alertEl.textContent = "L'eau atteint le bord du bas-port : les berges sont en général fermées au public. Prévenir clients et équipe, déplacer les événements."; }
-  else { alertEl.className = "bad"; alertEl.textContent = "Bas-port sous l'eau : la péniche flotte et monte avec la Seine, mais plus personne ne peut y accéder à pied. C'est le scénario « Mazette hors les murs »."; }
+// ---------- Calendrier de la programmation (décembre 2026)
+const EVENTS = [
+  { d: 1, h: "18h", t: "Vinyles & Apéro Seine", tag: "Apéro · vinyles" },
+  { d: 2, h: "18h30", t: "La Discotaco", tag: "Disco" },
+  { d: 3, h: "18h", t: "Committee Club : Alien & Disco DJ", tag: "Collectif" },
+  { d: 4, h: "17h", t: "Main DJ : Baile Bom Selvag Eeeem !!", tag: "Main DJ" },
+  { d: 9, h: "21h", t: "Comedy, Quiz & Live DJ Jam", tag: "Comedy · quiz" },
+  { d: 11, h: "18h", t: "Committee Club : Glagla, Ginto & DJ", tag: "Collectif" },
+  { d: 12, h: "17h", t: "Coucou Bordel – Festival Christmas Edition", tag: "Festival" },
+  { d: 13, h: "17h", t: "La Copain-Copine : Boum queer & DJ", tag: "Boum queer" },
+  { d: 16, h: "18h", t: "Afterwork Sunset & Nu-Disco DJ", tag: "Afterwork" },
+  { d: 23, h: "18h", t: "Carte blanche collectifs DJ", tag: "Collectifs" },
+  { d: 26, h: "18h", t: "Main DJ : Sapin, Scandales", tag: "Main DJ" },
+  { d: 27, h: "18h", t: "La Discotaco XXL", tag: "Disco" },
+];
+const YEAR = 2026, MONTH = 11; // décembre (0-based)
+const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const calGrid = document.getElementById("calGrid"), calDetail = document.getElementById("calDetail"), calList = document.getElementById("calList");
+document.getElementById("calCount").textContent = EVENTS.length + " soirées";
+let calSel = null;
+const dayLabel = d => { const wd = new Date(YEAR, MONTH, d).getDay(); return JOURS[wd] + " " + d + " décembre"; };
+function renderCal() {
+  calGrid.innerHTML = "";
+  ["L", "M", "M", "J", "V", "S", "D"].forEach(x => { const s = document.createElement("div"); s.className = "dow"; s.textContent = x; calGrid.appendChild(s); });
+  const first = (new Date(YEAR, MONTH, 1).getDay() + 6) % 7, days = new Date(YEAR, MONTH + 1, 0).getDate();
+  for (let i = 0; i < first; i++) calGrid.appendChild(document.createElement("div"));
+  for (let d = 1; d <= days; d++) {
+    const evs = EVENTS.filter(e => e.d === d), b = document.createElement("button"), wd = new Date(YEAR, MONTH, d).getDay();
+    b.className = "day" + (evs.length ? " has" : "") + (calSel === d ? " sel" : "") + (wd === 5 || wd === 6 ? " we" : "");
+    b.textContent = d;
+    if (evs.length) { b.setAttribute("aria-label", dayLabel(d) + " : " + evs.map(e => e.t).join(", ")); b.onclick = () => selectDay(d); }
+    else { b.disabled = true; b.setAttribute("aria-label", dayLabel(d) + " : pas de soirée"); }
+    calGrid.appendChild(b);
+  }
+  calList.innerHTML = "";
+  EVENTS.forEach(e => { const b = document.createElement("button"); if (calSel === e.d) b.className = "on"; const s = document.createElement("b"); s.textContent = e.d + " déc."; const t = document.createElement("span"); t.textContent = e.t; b.append(s, t); b.onclick = () => selectDay(e.d); calList.appendChild(b); });
 }
-updateCrueText();
+function selectDay(d) {
+  calSel = d; renderCal();
+  calDetail.innerHTML = "";
+  EVENTS.filter(e => e.d === d).forEach(e => {
+    const box = document.createElement("div"); box.className = "ev";
+    const dd = document.createElement("div"); dd.className = "d"; dd.textContent = dayLabel(d) + " · " + e.h;
+    const tt = document.createElement("div"); tt.className = "t"; tt.textContent = e.t;
+    const tg = document.createElement("span"); tg.className = "tag"; tg.textContent = e.tag;
+    box.append(dd, tt, tg); calDetail.appendChild(box);
+  });
+}
+selectDay(EVENTS[0].d);
+const calEl = document.getElementById("cal"), calFold = document.getElementById("bCalFold");
+function setCalFold(f) { calEl.classList.toggle("folded", f); calFold.textContent = f ? "Programme ▴" : "Réduire ▾"; calFold.setAttribute("aria-expanded", String(!f)); }
+calFold.onclick = () => setCalFold(!calEl.classList.contains("folded"));
+if (innerWidth < 760) setCalFold(true);
 
 // ---------- Animate
 const clock = new THREE.Clock();
