@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le Mazette hors les murs – Lieux de repli en cas de crue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root{--night:#141a33;--sun:#ff6a00;--sun2:#ffc857;--cream:#fff7ec;--ink:#1b1b22;--muted:#6b6a75;--ok:#1f7a4d;--ko:#b3361f}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"DM Sans",system-ui,sans-serif;background:var(--night);color:var(--ink)}
+  #scene{position:fixed;inset:0}
+  .panel{position:fixed;background:rgba(255,247,236,.95);backdrop-filter:blur(8px);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  button{font:inherit;font-size:13px;font-weight:700;border:1.5px solid #e7d9c6;background:#fff;color:var(--ink);border-radius:99px;padding:7px 12px;cursor:pointer;min-height:36px}
+  button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  #tabs{top:14px;left:50%;transform:translateX(-50%);padding:6px;display:flex;gap:6px;align-items:center;z-index:5}
+  #tabs .t{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 8px 0 6px;white-space:nowrap}
+  #tabs button{font-size:14px;padding:9px 18px;min-height:42px}
+  #tabs button.on{background:var(--sun);border-color:var(--sun)}
+  #info{top:76px;left:16px;width:min(350px,calc(100vw - 32px));padding:16px 18px;max-height:calc(100vh - 100px);overflow:auto}
+  #info .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  #info h1{font-family:"Syne",sans-serif;font-size:22px;margin:0;line-height:1.05}
+  #info .sub{font-size:12.5px;color:var(--muted);margin:6px 0 10px;line-height:1.4}
+  .kpis{display:flex;gap:8px;margin:8px 0 10px}
+  .kpi{flex:1;background:#fff;border-radius:10px;padding:8px 10px}
+  .kpi b{display:block;font-family:"Syne";font-size:18px}
+  .kpi span{font-size:11px;color:var(--muted)}
+  .sp{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:10px;cursor:pointer;border:1.5px solid transparent;margin:3px 0;width:100%;text-align:left;background:transparent;font-weight:400;min-height:0}
+  .sp:hover{background:#fff}
+  .sp.on{border-color:var(--sun);background:#fff3e6;color:var(--ink)}
+  .sw{width:12px;height:12px;border-radius:3px;flex:none;margin-top:4px}
+  .sp b{font-size:14px;display:block}
+  .sp small{font-size:12px;color:var(--muted);line-height:1.35;display:block}
+  .sp .rep{display:block;margin-top:3px;font-size:11.5px;font-weight:700;color:#b34a00}
+  #info.folded{width:auto;padding:10px 12px}
+  #info.folded #infoBody{display:none}
+  #controls{right:16px;top:76px;padding:10px 12px;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100vw - 32px)}
+  #verdict{right:16px;bottom:16px;width:min(340px,calc(100vw - 32px));padding:14px 16px;max-height:calc(100vh - 180px);overflow:auto}
+  #verdict h2{font-family:"Syne",sans-serif;font-size:16px;margin:0 0 8px}
+  #verdict .vs{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 10px;font-size:12.5px;margin-bottom:10px;align-items:baseline}
+  #verdict .vs .h{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  #verdict ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:12.5px;line-height:1.4}
+  #verdict li{padding-left:20px;position:relative}
+  #verdict li::before{position:absolute;left:0;top:0;font-weight:700}
+  #verdict li.p::before{content:"+";color:var(--ok)}
+  #verdict li.m::before{content:"–";color:var(--ko)}
+  #verdict.folded{width:auto;padding:10px 12px}
+  #verdict.folded #vBody{display:none}
+  #verdict .head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  #verdict .head h2{margin:0}
+  #foot{left:16px;bottom:16px;padding:8px 12px;font-size:11.5px;color:var(--muted);max-width:min(460px,calc(100vw - 400px))}
+  .lab{font-size:12px;font-weight:700;color:#fff;background:rgba(20,26,51,.85);padding:4px 9px;border-radius:99px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.25)}
+  .lab.q{background:rgba(110,100,90,.85)}
+  #loading{position:fixed;inset:0;display:grid;place-items:center;color:var(--cream);font-family:"Syne";font-size:20px}
+  @media (max-width:860px){
+    #tabs .t{display:none}
+    #controls{top:auto;bottom:16px;left:16px;right:auto}
+    #foot{display:none}
+    #verdict{bottom:70px}
+  }
+</style>
+</head>
+<body>
+<div id="loading">Chargement des lieux…</div>
+<div id="scene"></div>
+
+<div class="panel" id="tabs" role="tablist" aria-label="Lieux de repli">
+  <span class="t">Mazette hors les murs</span>
+  <button role="tab" id="tabB" class="on" aria-selected="true" data-v="belle">La Bellevilloise</button>
+  <button role="tab" id="tab2" aria-selected="false" data-v="v211">Le 211</button>
+</div>
+
+<div class="panel" id="info">
+  <div class="head"><h1 id="vName">La Bellevilloise</h1><button id="bFold" aria-expanded="true">Réduire ▴</button></div>
+  <div id="infoBody">
+    <div class="sub" id="vSub"></div>
+    <div class="kpis" id="vKpis"></div>
+    <div id="vSpaces" role="list"></div>
+  </div>
+</div>
+
+<div class="panel" id="controls">
+  <button id="bNight">Nuit</button>
+  <button id="bSpin" class="on">Rotation</button>
+  <button id="bAll">Tout afficher</button>
+</div>
+
+<div class="panel" id="verdict">
+  <div class="head"><h2>En cas de crue</h2><button id="bVFold" aria-expanded="true">Réduire ▾</button></div>
+  <div id="vBody">
+    <div class="vs" id="vVs"></div>
+    <ul id="vList"></ul>
+  </div>
+</div>
+
+<div class="panel" id="foot">Maquettes indicatives, reconstruites à partir de photos et des fiches de privatisation publiques (ABC Salles, Paris je t'aime, Bridebook, Privateaser, Agenda culturel). Surfaces et jauges approximatives, à confirmer avec chaque lieu.</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+// ---------- Données
+const MAZETTE = { cap: "1 300 pers.", surf: "≈ 1 150 m²", roof: "450 m²" };
+const VENUES = {
+  belle: {
+    name: "La Bellevilloise",
+    sub: "19-21 rue Boyer, Paris 20e · Métro Ménilmontant (2) ou Gambetta (3) · 4 niveaux, 5 espaces modulables",
+    kpis: [["1 490", "personnes"], ["2 000 m²", "surface"], ["4", "niveaux"]],
+    spaces: [
+      { id: "toit", name: "Le Toit", info: "300 m² · 180 pers. · rooftop saisonnier, rouvre au printemps", rep: "Remplace le rooftop du Mazette", color: "#ff8a3d" },
+      { id: "loft", name: "Le Loft", info: "370 m² · 400 pers. · grande salle : soirées, salons, dîners", rep: "Remplace les grandes soirées et les events B2B", color: "#ffc857" },
+      { id: "forum", name: "Le Forum", info: "250 m² + mezzanine 70 m² · 300 pers. · bar, café-concerts, afterworks", rep: "Remplace le bar et les afterworks", color: "#7cc6b8" },
+      { id: "sas", name: "Le SAS", info: "80 m² · 90 pers. · vestiaire, stockage, loge", rep: "Remplace le vestiaire", color: "#d94f4f" },
+      { id: "halle", name: "La Halle aux Oliviers", info: "170 m² + mezzanine 60 m² · 190 pers. · restaurant sous verrière, oliviers centenaires", rep: "Remplace Facette, le restaurant", color: "#6aa84f" },
+      { id: "terrasse", name: "La Terrasse", info: "70 m² · 80 pers. · pergola, apéritifs", rep: "Remplace la terrasse du rez-de-Seine", color: "#c58b4a" },
+      { id: "club", name: "Le Club", info: "250 m² · 350 pers. · concerts, clubbing · ouvert ven. et sam. jusqu'à 6h", rep: "Remplace le club du rez-de-chaussée", color: "#ff5d73" },
+    ],
+    vs: [["Jauge", "1 490", MAZETTE.cap], ["Rooftop", "300 m²", MAZETTE.roof], ["En intérieur l'hiver", "Oui, 5 salles", "—"]],
+    pros: [
+      ["p", "Toute la jauge du Mazette tient en intérieur : idéal de novembre à mars, la saison des crues."],
+      ["p", "Un vrai club ouvert tard le week-end, et un rooftop pour retrouver l'open air au printemps."],
+      ["p", "Des espaces qui correspondent un par un à ceux du Mazette : chaque soirée garde son format."],
+      ["m", "Pas au bord de l'eau : on perd l'effet « péniche sur la Seine »."],
+      ["m", "Lieu très programmé (plus de 600 événements par an) : les dates de repli sont à négocier à l'avance."],
+    ],
+  },
+  v211: {
+    name: "Le 211",
+    sub: "27 Galerie de la Villette, Paris 19e · au bord du canal de l'Ourcq · Métro Porte de Pantin (5), en direct depuis Gare d'Austerlitz",
+    kpis: [["1 000", "personnes max."], ["390 m²", "en intérieur"], ["5", "espaces"]],
+    spaces: [
+      { id: "rooftop", name: "Le Rooftop", info: "80 m² · vue sur le canal, attenant au Petit Club", rep: "Remplace le rooftop, en bien plus petit (450 m² au Mazette)", color: "#ff8a3d" },
+      { id: "petitclub", name: "Le Petit Club", info: "140 m² · ambiance speakeasy, à l'étage", rep: "Remplace le rez-de-Seine (100 m²)", color: "#ff5d73" },
+      { id: "nef", name: "La Nef", info: "250 m² · salle principale : bar, restaurant, club", rep: "Remplace le club du rez-de-chaussée et Facette", color: "#ffc857" },
+      { id: "terrasses", name: "Les 2 terrasses", info: "jusqu'à 300 pers. · pelouse, bancs en bois, parasols", rep: "Remplace l'open air, surtout l'été", color: "#6aa84f" },
+    ],
+    vs: [["Jauge", "1 000 max.", MAZETTE.cap], ["Rooftop", "80 m²", MAZETTE.roof], ["En intérieur l'hiver", "390 m²", "—"]],
+    pros: [
+      ["p", "Au bord de l'eau, le long du canal : l'ambiance reste proche de la péniche."],
+      ["p", "Ligne 5 directe depuis Gare d'Austerlitz, la station du Mazette : facile pour les habitués."],
+      ["p", "Bar, restaurant et club déjà orientés musiques électroniques : public proche de celui du Mazette."],
+      ["m", "La jauge de 1 000 compte les terrasses et le rooftop, peu utilisables l'hiver, saison des crues."],
+      ["m", "Rooftop de 80 m² contre 450 m² au Mazette : impossible d'y transposer les soirées open air."],
+    ],
+  },
+};
+
+// ---------- Scène
+const el = document.getElementById("scene");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+el.appendChild(renderer.domElement);
+const labels = new CSS2DRenderer(); labels.setSize(innerWidth, innerHeight);
+Object.assign(labels.domElement.style, { position: "fixed", inset: "0", pointerEvents: "none" });
+el.appendChild(labels.domElement);
+
+const scene = new THREE.Scene();
+const DAY = new THREE.Color(0xc7deec), NIGHT = new THREE.Color(0x0e1328);
+scene.background = DAY.clone(); scene.fog = new THREE.Fog(DAY.clone(), 110, 260);
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 600);
+camera.position.set(48, 34, 58);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(-2, 3, 0); controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.48;
+controls.minDistance = 20; controls.maxDistance = 150; controls.autoRotate = true; controls.autoRotateSpeed = 0.45;
+const hemi = new THREE.HemisphereLight(0xffffff, 0x445566, 0.95); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1dd, 1.6); sun.position.set(40, 70, 40); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 1, far: 220 }); scene.add(sun);
+
+const M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0.05, ...o });
+const sh = m => { m.castShadow = true; m.receiveShadow = true; return m; };
+const box = (w, h, d, m, x, y, z, p) => { const o = sh(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m)); o.position.set(x, y + h / 2, z); p.add(o); return o; };
+const cyl = (rt, rb, h, m, x, y, z, p, s = 14) => { const o = sh(new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), m)); o.position.set(x, y + h / 2, z); p.add(o); return o; };
+const label = (t, p, x, y, z, cls = "") => { const d = document.createElement("div"); d.className = "lab " + cls; d.textContent = t; const o = new CSS2DObject(d); o.position.set(x, y, z); p.add(o); return o; };
+const canvasTex = (w, h, draw, rx = 1, ry = 1) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); return t; };
+const glass = new THREE.MeshPhysicalMaterial({ color: 0xa8d0e6, transparent: true, opacity: 0.32, roughness: 0.05 });
+const frameM = M(0x2b2b33, { metalness: 0.5, roughness: 0.4 });
+const lamps = [];
+const people = (n, x0, x1, z0, z1, y, p, cols = [0xff5d73, 0x3b6e8f, 0xffc857, 0x2b2b33, 0x7cc6b8]) => {
+  for (let i = 0; i < n; i++) { const x = x0 + ((i * 37) % 97) / 97 * (x1 - x0), z = z0 + ((i * 61) % 89) / 89 * (z1 - z0);
+    cyl(0.22, 0.25, 1.2, M(cols[i % cols.length]), x, y, z, p, 8); const hd = sh(new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), M(0xe8c6a8))); hd.position.set(x, y + 1.42, z); p.add(hd); }
+};
+const tables = (n, x0, z0, dx, dz, cols, y, p, m) => { for (let i = 0; i < n; i++) { const x = x0 + (i % cols) * dx, z = z0 + Math.floor(i / cols) * dz; cyl(0.45, 0.45, 0.75, m, x, y, z, p, 14); } };
+const rail = (len, p, x, y, z, rot = 0) => { const g = new THREE.Group(); const t = new THREE.Mesh(new THREE.BoxGeometry(len, 0.07, 0.07), frameM); t.position.y = 1.05; g.add(t);
+  const n = Math.max(2, Math.round(len / 1.5)); for (let i = 0; i <= n; i++) { const q = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.1, 0.06), frameM); q.position.set(-len / 2 + len * i / n, 0.55, 0); g.add(q); }
+  g.position.set(x, y, z); g.rotation.y = rot; p.add(g); return g; };
+const lamp = (color, x, y, z, p) => { const l = new THREE.PointLight(color, 0, 22, 1.5); l.position.set(x, y, z); p.add(l); lamps.push(l); return l; };
+const plant = (x, y, z, p, s = 1) => { cyl(0.35 * s, 0.3 * s, 0.6 * s, M(0x8b5a3c), x, y, z, p, 10); const b = sh(new THREE.Mesh(new THREE.SphereGeometry(0.7 * s, 10, 8), M(0x4f7d4a))); b.position.set(x, y + 1.1 * s, z); p.add(b); };
+const tree = (x, y, z, p, s = 1, col = 0x5b8a4a) => { cyl(0.22 * s, 0.3 * s, 3 * s, M(0x6b4f3a), x, y, z, p, 8); const c = sh(new THREE.Mesh(new THREE.SphereGeometry(1.9 * s, 12, 10), M(col))); c.position.set(x, y + 4 * s, z); p.add(c); };
+
+// Each venue = a group; each space = a sub-group tagged for highlight
+const venues = {};
+function spaceGroup(venue, id, parent) { const g = new THREE.Group(); g.userData.space = id; parent.add(g); (venues[venue].spaces[id] = venues[venue].spaces[id] || []).push(g); return g; }
+
+// ==================== LA BELLEVILLOISE ====================
+{
+  const V = new THREE.Group(); scene.add(V); venues.belle = { group: V, spaces: {}, labels: [] };
+  const brick = M(0xa65a3f), cream = M(0xf0e6cf), slab = M(0x2a2a30), white = M(0xf4f2ee), wood = M(0x9a6b45), tile = M(0xb46a4a), redM = M(0xc8202f), dark = M(0x18181d);
+  // ground: street (x+) and sunken courtyard level
+  box(140, 0.4, 90, M(0xd9d6e3), 0, -4.4, 0, V);                 // site base
+  box(16, 0.1, 90, M(0x9a9aa6), 26, -4.0, 0, V);                  // rue Boyer
+  label("Rue Boyer", V, 30, -3.4, 18, "q");
+  // Main building: x -6..18, z -8..8 (open toward +z for cutaway)
+  const X0 = -6, X1 = 18, Z0 = -8, Z1 = 8, W = X1 - X0, D = Z1 - Z0, cx = (X0 + X1) / 2;
+  const lv = { club: -4, forum: 0, loft: 4.6, toit: 9.6 };
+  // back wall & side walls (brick), front open
+  box(W, 13.6, 0.5, brick, cx, -4, Z0, V);
+  box(0.5, 13.6, D, brick, X0, -4, 0, V);
+  // street facade (cream with arches) on x = X1
+  const fac = new THREE.Group(); V.add(fac);
+  box(0.6, 13.6, D, cream, X1, -4, 0, fac);
+  for (let i = 0; i < 5; i++) { box(0.1, 2.2, 1.4, M(0x22303f), X1 + 0.32, 5.6, -6 + i * 3, fac); box(0.1, 2.2, 1.4, M(0x22303f), X1 + 0.32, 1.2, -6 + i * 3, fac); }
+  box(1.6, 0.25, D + 1, frameM, X1 + 0.9, 3.4, 0, fac);           // marquise
+  const sign = label("La Bellevilloise · Café", fac, X1 + 1, 7.8, 6, "q");
+  // slabs
+  [lv.forum, lv.loft, lv.toit].forEach(y => box(W, 0.35, D, slab, cx, y - 0.35, 0, V));
+  // ---- Le Club (basement)
+  const club = spaceGroup("belle", "club", V);
+  box(W - 0.6, 0.1, D - 0.6, M(0x7a4a32), cx, lv.club, 0, club);
+  box(W - 0.6, 3.6, 0.1, dark, cx, lv.club, Z0 + 0.35, club);
+  box(4, 0.8, 3, M(0x1d1d24), X0 + 3, lv.club, 0, club);         // stage
+  box(5, 1.1, 1, M(0x3a2a20), X1 - 5, lv.club, -5, club);        // bar
+  people(26, X0 + 6, X1 - 2, Z0 + 2, Z1 - 1.5, lv.club, club);
+  lamp(0xff3b5c, cx, lv.club + 3, 0, club);
+  // ---- Le Forum (ground floor, with mezzanine)
+  const forum = spaceGroup("belle", "forum", V);
+  box(15, 0.1, D - 0.6, M(0xb58a5e), X0 + 7.8, lv.forum, 0, forum);
+  box(15, 0.2, 5, slab, X0 + 7.8, lv.forum + 2.4, Z0 + 2.8, forum);     // mezzanine
+  rail(15, forum, X0 + 7.8, lv.forum + 2.6, Z0 + 5.3);
+  box(6, 1.1, 1.2, M(0xe9e9ec), X0 + 5, lv.forum, -2, forum);            // white bar
+  tables(6, X0 + 4, 2, 2.6, 2.4, 3, lv.forum, forum, M(0x2b2b33));
+  lamp(0xffd28a, X0 + 7, lv.forum + 3.6, 0, forum);
+  // ---- Le SAS (street side, red)
+  const sas = spaceGroup("belle", "sas", V);
+  box(8.4, 4.2, 0.12, redM, X1 - 4.6, lv.forum, Z0 + 0.4, sas);
+  box(0.12, 4.2, D - 1, redM, X1 - 8.8, lv.forum, 0, sas);
+  box(8, 0.1, D - 0.6, M(0x5b3a3a), X1 - 4.6, lv.forum, 0, sas);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) box(0.5, 0.8, 0.5, M(0x6b4a7a), X1 - 7 + i * 1.4, lv.forum, -3 + j * 1.8, sas);
+  // ---- Le Loft (1st floor, white, spots)
+  const loft = spaceGroup("belle", "loft", V);
+  box(W - 0.6, 0.1, D - 0.6, white, cx, lv.loft, 0, loft);
+  box(W - 0.6, 4.6, 0.1, white, cx, lv.loft, Z0 + 0.35, loft);
+  for (let i = 0; i < 5; i++) box(0.8, 0.12, 0.3, M(0x111111), X0 + 4 + i * 4, lv.loft + 4.4, 0, loft);
+  for (let i = 0; i < 3; i++) { const s = sh(new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 12), M(0xffffff, { emissive: 0xfff4d6, emissiveIntensity: 0.25 }))); s.position.set(X0 + 4 + i * 5, lv.loft + 3.4, 2); loft.add(s); }
+  people(16, X0 + 3, X1 - 3, Z0 + 2, Z1 - 1.5, lv.loft, loft, [0x1d1d24, 0x2b2b33, 0x3b6e8f]);
+  lamp(0xfff1d0, cx, lv.loft + 3.6, 0, loft);
+  // ---- Le Toit (rooftop)
+  const toit = spaceGroup("belle", "toit", V);
+  box(W, 0.12, D, M(0xa0785a), cx, lv.toit, 0, toit);
+  rail(W, toit, cx, lv.toit + 0.1, Z1 - 0.2); rail(W, toit, cx, lv.toit + 0.1, Z0 + 0.2);
+  for (let i = 0; i < 4; i++) cyl(0.12, 0.12, 2.6, wood, X0 + 8 + i * 3, lv.toit, -4, toit, 8);
+  box(11, 0.15, 4.6, M(0x8a3a2a), X0 + 12.5, lv.toit + 2.6, -4, toit);    // pergola roof
+  for (let i = 0; i < 9; i++) plant(X0 + 1.5 + i * 2.6, lv.toit, Z0 + 1, toit, 0.9);
+  tables(6, X0 + 3, 2, 3, 2.5, 3, lv.toit, toit, M(0xc8653a));
+  box(2, 4, 4, brick, X1 - 2, lv.toit, -4, toit);                         // stair house
+  const flag = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.4, 3), redM); flag.rotation.z = -Math.PI / 2; flag.position.set(X1 + 0.6, lv.toit + 6, 6); toit.add(flag); cyl(0.05, 0.05, 6.5, frameM, X1, lv.toit, 6, toit, 6);
+  // ---- La Halle aux Oliviers (sunken courtyard hall, x -26..-6)
+  const H0 = -26, H1 = -6, hc = (H0 + H1) / 2;
+  const halle = spaceGroup("belle", "halle", V);
+  box(H1 - H0, 0.1, D, tile, hc, -4, 0, halle);
+  box(H1 - H0, 5, 0.5, brick, hc, -4, Z0, halle);
+  box(0.5, 5, D, brick, H0, -4, 0, halle);
+  const verr = new THREE.Mesh(new THREE.BoxGeometry(10, 0.12, D), glass); verr.position.set(hc - 4, 1.05, 0); halle.add(verr);
+  for (let i = 0; i <= 5; i++) box(0.12, 0.2, D, M(0x3e6b4a, { metalness: 0.4 }), hc - 9 + i * 2, 0.9, 0, halle);
+  for (let i = 0; i < 4; i++) tree(H0 + 3 + i * 4.2, -4, -2 + (i % 2) * 3, halle, 0.65, 0x7a9a5a);
+  box(6, 1.1, 1.4, M(0x8a2a24), H1 - 5, -4, -5.5, halle);                // bar
+  tables(9, H0 + 4, 3.5, 3, 1.8, 5, -4, halle, M(0x7a4a32));
+  box(4, 0.5, 3, M(0x8a2a24), H0 + 2.5, -4, -5, halle);                   // stage 7 m²
+  // big stair from courtyard to terrace
+  for (let i = 0; i < 12; i++) box(3, 0.4, 0.7, M(0xb9b4ad), H0 - 1.6, -4 + i * 0.4, 6 - i * 0.7, V);
+  lamp(0xffc48a, hc, -1, 0, halle);
+  // ---- La Terrasse (on top of the halle, pergola)
+  const ter = spaceGroup("belle", "terrasse", V);
+  box(9, 0.15, D, M(0xa0785a), H1 - 5, 0.9, 0, ter);
+  rail(9, ter, H1 - 5, 1.05, Z1 - 0.2);
+  for (let i = 0; i < 4; i++) { cyl(0.1, 0.1, 2.6, wood, H1 - 9 + i * 2.8, 1.05, -4, ter, 8); cyl(0.1, 0.1, 2.6, wood, H1 - 9 + i * 2.8, 1.05, 3, ter, 8); }
+  for (let i = 0; i < 10; i++) box(0.12, 0.12, 8, M(0x6b5a2a), H1 - 9.5 + i * 1, 3.6, -0.5, ter);
+  tables(4, H1 - 7.5, -1.5, 3, 3, 2, 1.05, ter, M(0xd9d0c0));
+  // labels
+  venues.belle.labels = [
+    label("Le Toit", toit, cx, lv.toit + 4.6, 0), label("Le Loft", loft, cx, lv.loft + 3, Z1 + 0.5), label("Le Forum", forum, X0 + 6, lv.forum + 1.6, Z1 + 0.5),
+    label("Le SAS", sas, X1 - 4.6, lv.forum + 1.6, Z1 + 0.5), label("Le Club", club, cx, lv.club + 1.6, Z1 + 0.5),
+    label("La Halle aux Oliviers", halle, hc, -2, Z1 + 0.5), label("La Terrasse", ter, H1 - 5, 4.6, 0),
+  ];
+  V.userData.target = new THREE.Vector3(-4, 2, 0);
+}
+
+// ==================== LE 211 ====================
+{
+  const V = new THREE.Group(); scene.add(V); venues.v211 = { group: V, spaces: {}, labels: [] };
+  // striped granite texture
+  const stripe = canvasTex(256, 256, (g, w, h) => { const n = 10; for (let i = 0; i < n; i++) { g.fillStyle = i % 2 ? "#5c5f66" : "#a7aab0"; g.fillRect(0, i * h / n, w, h / n + 1); } g.globalAlpha = .12; for (let k = 0; k < 900; k++) { g.fillStyle = Math.random() < .5 ? "#000" : "#fff"; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }, 6, 1);
+  const granite = new THREE.MeshStandardMaterial({ map: stripe, roughness: 0.7 });
+  const granite2 = new THREE.MeshStandardMaterial({ map: stripe.clone(), roughness: 0.7 }); granite2.map.repeat.set(2, 1); granite2.map.needsUpdate = true;
+  const redF = M(0xd8261f, { roughness: 0.5 }), steel = M(0x8c939c, { metalness: 0.6, roughness: 0.35 }), wood = M(0xa8743f), grass = M(0x5f9a44), cobble = M(0xb2aca4), dark = M(0x1d1d24);
+  // canal in front (z +), quay, park behind (z -)
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(220, 26), new THREE.MeshStandardMaterial({ color: 0x4f8f86, roughness: 0.2, metalness: 0.1 })); water.rotation.x = -Math.PI / 2; water.position.set(0, -1.6, 22); water.receiveShadow = true; V.add(water); V.userData.water = water;
+  box(220, 2, 4, M(0xc9c3b8), 0, -2, 7, V);                       // quay
+  box(220, 2, 40, cobble, 0, -2, -24, V);                         // park side ground
+  box(220, 0.3, 4, M(0x8f877c), 0, -2.2, 37, V); box(220, 2, 6, M(0xc9c3b8), 0, -2, 38, V); // far bank
+  label("Canal de l'Ourcq", V, 0, -0.8, 22, "q");
+  // Main building x -30..30, z -6..5
+  const X0 = -30, X1 = 26, Z0 = -6, Z1 = 5, cx = (X0 + X1) / 2;
+  box(X1 - X0, 8.6, 0.4, granite, cx, 0, Z0, V);                  // back wall
+  box(0.4, 8.6, Z1 - Z0, granite2, X1, 0, (Z0 + Z1) / 2, V);
+  box(0.4, 8.6, Z1 - Z0, granite2, X0, 0, (Z0 + Z1) / 2, V);
+  // facade on canal side: lower band + upper band with gaps (cutaway windows)
+  box(X1 - X0, 1.2, 0.4, granite, cx, 7.4, Z1, V);
+  box(18, 3.4, 0.4, granite, X0 + 9, 0, Z1, V); box(20, 3.4, 0.4, granite, X1 - 10, 0, Z1, V);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(8, 3.4, 0.08), glass); door.position.set(cx - 2, 1.7, Z1 + 0.05); V.add(door);
+  for (let i = 0; i <= 6; i++) box(0.1, 3.4, 0.12, frameM, cx - 6 + i * 1.33, 0, Z1 + 0.1, V);
+  box(X1 - X0, 0.3, Z1 - Z0, M(0x3a3a40), cx, 3.7, (Z0 + Z1) / 2, V);   // upper slab
+  box(X1 - X0, 0.3, Z1 - Z0, M(0x5a5a60), cx, 8.3, (Z0 + Z1) / 2, V);   // roof
+  // walkway (galerie) along facade at y 3.9 with railing + tension masts
+  box(X1 - X0 + 20, 0.3, 2.6, steel, cx - 6, 3.6, Z1 + 1.5, V);
+  rail(X1 - X0 + 20, V, cx - 6, 3.9, Z1 + 2.7);
+  [-22, 0, 20].forEach(x => { cyl(0.18, 0.18, 12, dark, x, -1, Z1 + 2.8, V, 8);
+    const cab = (x2) => { const pts = [new THREE.Vector3(x, 11, Z1 + 2.8), new THREE.Vector3(x2, 3.9, Z1 + 2.6)]; V.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x1d1d24 }))); };
+    cab(x - 6); cab(x + 6); });
+  // "211" sign
+  const signTex = canvasTex(256, 256, (g, w, h) => { g.fillStyle = "rgba(0,0,0,0)"; g.clearRect(0, 0, w, h); g.strokeStyle = "#fff"; g.lineWidth = 10; g.strokeRect(20, 20, 216, 216); g.fillStyle = "#fff"; g.font = "700 120px DM Sans, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("211", 128, 136); });
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), new THREE.MeshBasicMaterial({ map: signTex, transparent: true })); sign.position.set(X0 - 0.25, 5.6, 0); sign.rotation.y = -Math.PI / 2; V.add(sign);
+  // ---- La Nef (ground floor hall)
+  const nef = spaceGroup("v211", "nef", V);
+  box(X1 - X0 - 1, 0.1, Z1 - Z0 - 0.6, M(0x6e5640), cx, 0, -0.5, nef);
+  box(10, 1.1, 1.3, M(0x2a2a30), X1 - 9, 0, -4, nef);                    // bar
+  box(4, 0.8, 3, dark, X0 + 4, 0, -2.5, nef);                             // DJ
+  for (let i = 0; i < 6; i++) { const b = sh(new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 10), M(0xffd28a, { emissive: 0xffa94d, emissiveIntensity: 0.6 }))); b.position.set(cx - 6 + i * 2.5, 3.0, 0); nef.add(b); }
+  tables(10, X0 + 10, -3, 3, 2.6, 5, 0, nef, wood);
+  people(18, X0 + 3, X1 - 3, -4.5, 3.5, 0, nef);
+  lamp(0xffb36b, cx, 3, 0, nef);
+  // ---- Le Petit Club (upper floor, speakeasy, x X1-14..X1)
+  const pc = spaceGroup("v211", "petitclub", V);
+  box(14, 0.1, Z1 - Z0 - 0.6, M(0x4a2a24), X1 - 7.2, 4.0, -0.5, pc);
+  box(14, 4.2, 0.12, M(0x5a1e1e), X1 - 7.2, 4.0, Z0 + 0.3, pc);
+  box(0.12, 4.2, Z1 - Z0 - 0.6, M(0x5a1e1e), X1 - 14.2, 4.0, -0.5, pc);
+  box(5, 1.1, 1, M(0x8a5a2a), X1 - 5, 4.0, -4, pc);
+  tables(4, X1 - 12, -1, 2.6, 2.4, 2, 4.0, pc, M(0x8a2a24));
+  lamp(0xff6a4d, X1 - 7, 7, 0, pc);
+  // ---- Rooftop (80 m², on the roof above the Petit Club)
+  const rt = spaceGroup("v211", "rooftop", V);
+  box(10, 0.12, 8, M(0xa0785a), X1 - 6, 8.6, -0.5, rt);
+  rail(10, rt, X1 - 6, 8.72, 3.4); rail(8, rt, X1 - 11, 8.72, -0.5, Math.PI / 2); rail(8, rt, X1 - 1, 8.72, -0.5, Math.PI / 2);
+  for (let i = 0; i < 4; i++) plant(X1 - 10 + i * 2.8, 8.72, -4, rt, 0.7);
+  tables(3, X1 - 9, 1, 3, 2, 3, 8.72, rt, M(0xd9d0c0));
+  // ---- Terrasses (park side: lawn + cobbles, benches, umbrellas)
+  const ts = spaceGroup("v211", "terrasses", V);
+  box(36, 0.12, 14, grass, cx - 6, -1, -16, ts);                          // lawn terrace
+  box(20, 0.08, 9, M(0xa59f97), cx + 18, -1, -12, ts);                    // cobble terrace
+  for (let i = 0; i < 4; i++) box(36 - i * 0.01, 0.1, 0.1, wood, cx - 6, -0.1 + i * 0, -9 - 0.1 * i, ts);
+  rail(36, ts, cx - 6, -0.9, -9); rail(36, ts, cx - 6, -0.9, -23);
+  for (let i = 0; i < 12; i++) { const x = X0 + 2 + (i % 6) * 6, z = -12 - Math.floor(i / 6) * 6; box(2.4, 0.75, 0.9, wood, x, -0.9, z, ts); box(2.4, 0.45, 0.4, wood, x, -0.9, z - 0.9, ts); box(2.4, 0.45, 0.4, wood, x, -0.9, z + 0.9, ts); }
+  for (let i = 0; i < 6; i++) { const x = X0 + 4 + i * 6, z = -15; cyl(0.06, 0.06, 2.6, dark, x, -0.9, z, ts, 6); const u = sh(new THREE.Mesh(new THREE.ConeGeometry(1.9, 0.6, 8), M(0x1f1f24))); u.position.set(x, 1.9, z); ts.add(u); }
+  for (let i = 0; i < 6; i++) { const x = cx + 11 + (i % 3) * 5, z = -10 - Math.floor(i / 3) * 4; box(2.2, 0.45, 0.6, wood, x, -0.92, z, ts); box(1.4, 0.7, 0.8, wood, x + 2, -0.92, z, ts); }
+  people(20, X0 + 2, cx + 10, -22, -10, -0.9, ts);
+  // context: red folie, steel footbridge, trees
+  const ctx = new THREE.Group(); V.add(ctx);
+  box(10, 10, 9, redF, X0 - 6, -1, -1, ctx); box(9, 3, 8, redF, X0 - 6, 9, -1, ctx);
+  for (let i = 0; i < 3; i++) box(2.2, 1, 0.1, M(0x5a1010), X0 - 9 + i * 3, 10.5, 3.5, ctx);
+  const rf = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.2, 4), redF); rf.rotation.x = Math.PI; rf.position.set(X0 - 6, 14.2, -1); ctx.add(rf); cyl(0.04, 0.04, 2, frameM, X0 - 6, 12, -1, ctx, 6);
+  label("Folie rouge du parc", ctx, X0 - 6, 15.5, -1, "q");
+  // footbridge over the canal (Galerie de la Villette)
+  box(5, 0.6, 40, steel, X0 - 18, 6, 20, ctx); rail(40, ctx, X0 - 20.4, 6.6, 20, Math.PI / 2); rail(40, ctx, X0 - 15.6, 6.6, 20, Math.PI / 2);
+  for (let i = 0; i < 5; i++) { box(0.5, 8, 0.5, steel, X0 - 20, -2, 2 + i * 9, ctx); box(0.5, 8, 0.5, steel, X0 - 16, -2, 2 + i * 9, ctx); }
+  label("Galerie de la Villette", ctx, X0 - 18, 8.4, 22, "q");
+  for (let i = 0; i < 9; i++) tree(-60 + i * 14, -1, -34 + (i % 2) * 3, ctx, 1.1);
+  // small boats
+  for (let i = 0; i < 4; i++) { const b = new THREE.Group(); box(4, 0.8, 1.8, M(0x9a2424), 0, 0, 0, b); box(2, 0.6, 1.4, M(0xf2f2f2), 0.3, 0.8, 0, b); b.position.set(-4 + i * 6, -1.9, 11); ctx.add(b); }
+  venues.v211.labels = [
+    label("Rooftop · 80 m²", rt, X1 - 6, 11, -0.5), label("Le Petit Club", pc, X1 - 7.2, 6, Z1 + 3.6), label("La Nef", nef, cx - 6, 2, Z1 + 3.6), label("Terrasses", ts, cx - 6, 2.4, -16),
+  ];
+  V.userData.target = new THREE.Vector3(-6, 2, -4);
+}
+
+// ---------- UI & état
+let current = "belle", selected = null, night = false, nightT = 0;
+const $ = id => document.getElementById(id);
+function renderInfo() {
+  const d = VENUES[current];
+  $("vName").textContent = d.name; $("vSub").textContent = d.sub;
+  $("vKpis").innerHTML = ""; d.kpis.forEach(([v, l]) => { const k = document.createElement("div"); k.className = "kpi"; const b = document.createElement("b"); b.textContent = v; const s = document.createElement("span"); s.textContent = l; k.append(b, s); $("vKpis").appendChild(k); });
+  $("vSpaces").innerHTML = "";
+  d.spaces.forEach(s => {
+    const b = document.createElement("button"); b.className = "sp" + (selected === s.id ? " on" : ""); b.setAttribute("role", "listitem"); b.setAttribute("aria-pressed", String(selected === s.id));
+    const sw = document.createElement("span"); sw.className = "sw"; sw.style.background = s.color;
+    const t = document.createElement("span"); const n = document.createElement("b"); n.textContent = s.name; const i = document.createElement("small"); i.textContent = s.info; const r = document.createElement("span"); r.className = "rep"; r.textContent = "↳ " + s.rep;
+    t.append(n, i, r); b.append(sw, t); b.onclick = () => { selected = selected === s.id ? null : s.id; renderInfo(); applyHighlight(); }; $("vSpaces").appendChild(b);
+  });
+  $("vVs").innerHTML = "";
+  [["", d.name, "Le Mazette"], ...d.vs].forEach((row, ri) => row.forEach((c, ci) => { const x = document.createElement("span"); x.textContent = c; if (ri === 0) x.className = "h"; else if (ci === 0) x.style.color = "var(--muted)"; else if (ci === 1) x.style.fontWeight = "700"; $("vVs").appendChild(x); }));
+  $("vList").innerHTML = ""; d.pros.forEach(([k, t]) => { const li = document.createElement("li"); li.className = k; li.textContent = t; $("vList").appendChild(li); });
+}
+function applyHighlight() {
+  const v = venues[current];
+  v.group.traverse(o => {
+    if (!o.isMesh || o.material === glass) return;
+    let sp = null, p = o; while (p && p !== v.group) { if (p.userData.space) { sp = p.userData.space; break; } p = p.parent; }
+    const dim = selected && sp !== selected;
+    if (!o.userData.m0) o.userData.m0 = o.material;
+    if (dim && !o.userData.mDim) { o.userData.mDim = o.userData.m0.clone(); o.userData.mDim.transparent = true; o.userData.mDim.opacity = 0.14; }
+    o.material = dim ? o.userData.mDim : o.userData.m0;
+  });
+  v.labels.forEach(l => { let p = l.parent; l.visible = !selected || p.userData.space === selected; });
+}
+function setVenue(name) {
+  current = name; selected = null;
+  Object.entries(venues).forEach(([k, v]) => { v.group.visible = k === name; v.group.traverse(o => { if (o.isCSS2DObject) o.visible = k === name; }); });
+  document.querySelectorAll("#tabs button").forEach(b => { const on = b.dataset.v === name; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
+  controls.target.copy(venues[name].group.userData.target);
+  renderInfo(); applyHighlight();
+}
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => setVenue(b.dataset.v));
+$("bNight").onclick = e => { night = !night; e.target.classList.toggle("on", night); };
+$("bSpin").onclick = e => { controls.autoRotate = !controls.autoRotate; e.target.classList.toggle("on", controls.autoRotate); };
+$("bAll").onclick = () => { selected = null; renderInfo(); applyHighlight(); };
+const fold = (panel, btn, open, closed) => { const f = !$(panel).classList.contains("folded"); $(panel).classList.toggle("folded", f); $(btn).textContent = f ? closed : open; $(btn).setAttribute("aria-expanded", String(!f)); };
+$("bFold").onclick = () => fold("info", "bFold", "Réduire ▴", "Espaces ▾");
+$("bVFold").onclick = () => fold("verdict", "bVFold", "Réduire ▾", "En cas de crue ▴");
+if (innerWidth < 760) { fold("info", "bFold", "Réduire ▴", "Espaces ▾"); fold("verdict", "bVFold", "Réduire ▾", "En cas de crue ▴"); }
+setVenue("belle");
+
+// ---------- Animation
+const clock = new THREE.Clock();
+function animate() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  nightT += ((night ? 1 : 0) - nightT) * Math.min(1, dt * 3);
+  scene.background.copy(DAY).lerp(NIGHT, nightT); scene.fog.color.copy(scene.background);
+  hemi.intensity = 0.95 - 0.7 * nightT; sun.intensity = 1.6 - 1.45 * nightT;
+  lamps.forEach(l => l.intensity = 38 * nightT);
+  controls.update(); renderer.render(scene, camera); labels.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+$("loading").remove(); animate();
+addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); labels.setSize(innerWidth, innerHeight); });
+</script>
+</body>
+</html>
